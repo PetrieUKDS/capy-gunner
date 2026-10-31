@@ -29,7 +29,7 @@ python -m http.server 8000
 - **Easy, Normal and Nightmare** difficulty (Nightmare unlocks after a 10-minute run), plus a **daily challenge** with a fixed path and twist each day.
 - **Wardrobe**: capybara skins with stat bonuses and hats, some unlocked by progress and achievements.
 - **Sidekicks** from level 10: a drone buddy or a boomerang, levelled up separately from your gun.
-- **New areas** after each lap of all five bosses (Scorched Dunes, then Midnight Swamp), with tougher, faster swarms.
+- **New areas** after each lap of all five bosses: Scorched Dunes (sand, cacti, sandstone) and the night-time Midnight Swamp (moss, pools, glowing mushrooms), with tougher, faster swarms.
 - **Shop**: coins earned every run buy permanent upgrades (health, damage, speed, pickup range, XP, airstrike charge).
 - **Run summary** after each death (what killed you, boss times, damage by source, your build) and a build view on the pause screen.
 - **Settings** for music and sound volume, screen shake, flashes, damage numbers and a low-graphics mode.
