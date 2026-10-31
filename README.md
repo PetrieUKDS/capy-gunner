@@ -23,7 +23,7 @@ python -m http.server 8000
 ## What's in it
 
 - **Six weapon paths**, chosen at your first level-up: Gunner, Pistolier, Shotgunner, Sniper, Pyro and Bombardier, each with its own upgrades and an evolution (max one upgrade and take its matching general upgrade).
-- **Five bosses** with intros and death animations: Queen Antoinette, Big Chompy, Talon, Slithers and ANT-1000. Their health scales with your build and they enrage at half health.
+- **Eleven bosses** with intros and death animations. The Queen opens every lap and ANT-1000 closes it; in between, the Meadow has Big Chompy, Talon and Slithers, the Scorched Dunes have Scorch (scorpion), Grumble (sandworm) and Rollo (armadillo), and the Midnight Swamp has the Bog King (toad), Mama Skeeter (mosquito) and King Fungus. Their health scales with your build and they enrage at half health.
 - **Elite ants** (splitter, shielded, speedy) that drop treasure chests with a free upgrade.
 - **Map power-ups** (seed magnet, freeze bomb, rage chilli) and **hazards** (ant tunnels, sticky sap, swarm waves).
 - **Easy, Normal and Nightmare** difficulty (Nightmare unlocks after a 10-minute run), plus a **daily challenge** with a fixed path and twist each day.
