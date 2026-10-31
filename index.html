@@ -184,6 +184,11 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
 .overbtns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 /* phones: thumb-sized HUD buttons */
 @media (max-width: 480px) { .right { flex-direction: column; align-items: flex-end; gap: 6px; } #camBtn { display: none; } }
+/* phones: the boss bar runs along the bottom edge, with the airstrike button and thumbstick lifted clear of it */
+@media (max-width: 480px) {
+  .boss { position: fixed; width: auto; justify-self: stretch; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+  .strike { bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
+}
 @media (pointer: coarse) { .hud .ibtn { min-height: 44px; min-width: 44px; padding: 10px 12px; } #pauseBtn { min-width: 72px; font-size: 14px; } }
 @media (max-width: 480px) { .wtop { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
 @media (max-width: 480px) { .clock { font-size: 24px; } .stat { font-size: 12px; } .strike { width: 78px; height: 78px; } .strike span { width: 62px; height: 62px; font-size: 13px; } }
@@ -436,7 +441,7 @@ setInterval(musicTick, 40);
 const keys = new Set();
 // on phones a faint stick sits bottom-left; touching near it uses it as a fixed stick, anywhere else floats
 const TOUCH = matchMedia('(pointer: coarse)').matches, REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const joyHome = () => ({ x: 96, y: H - 110 });
+const joyHome = () => ({ x: 96, y: H - (W <= 480 ? 136 : 110) });
 const joy = { on: false, id: null, ox: 0, oy: 0, x: 0, y: 0 };
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
