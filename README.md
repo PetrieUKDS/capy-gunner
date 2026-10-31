@@ -2,7 +2,9 @@
 
 A browser survival auto-shooter. Ant monsters pour out of the ground and never stop; your capybara's gun fires by itself at the nearest one. Keep moving, grab the seeds to level up, pick a weapon path, and survive the bosses that turn up every two minutes.
 
-The whole game is one file, `index.html`, with all its art embedded. Open it in a browser to play, or serve the folder:
+Play it at https://petrieukds.github.io/capy-gunner/. On a phone you can add it to your home screen and it works offline.
+
+The whole game is one file, `index.html`, with all its art embedded. `manifest.webmanifest`, `sw.js` and `icons/` only make the hosted version installable. Open it in a browser to play, or serve the folder:
 
 ```bash
 python -m http.server 8000
@@ -26,6 +28,12 @@ python -m http.server 8000
 - **Map power-ups** (seed magnet, freeze bomb, rage chilli) and **hazards** (ant tunnels, sticky sap, swarm waves).
 - **Easy, Normal and Nightmare** difficulty (Nightmare unlocks after a 10-minute run), plus a **daily challenge** with a fixed path and twist each day.
 - **Wardrobe**: capybara skins with stat bonuses and hats, some unlocked by progress and achievements.
+- **Sidekicks** from level 10: a drone buddy or a boomerang, levelled up separately from your gun.
+- **New areas** after each lap of all five bosses (Scorched Dunes, then Midnight Swamp), with tougher, faster swarms.
+- **Shop**: coins earned every run buy permanent upgrades (health, damage, speed, pickup range, XP, airstrike charge).
+- **Run summary** after each death (what killed you, boss times, damage by source, your build) and a build view on the pause screen.
+- **Settings** for music and sound volume, screen shake, flashes, damage numbers and a low-graphics mode.
+- First-run tips, and a **Report a bug** button that opens a GitHub issue with your run details filled in.
 - Music, hit-stop, screen shake, phone and controller support.
 
 Progress, best runs and cosmetics are saved in the browser's local storage.

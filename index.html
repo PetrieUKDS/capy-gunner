@@ -2,6 +2,7 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1a10">
 <title>Capybara with a Gun</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -179,6 +180,35 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
 .evotip { margin: -6px 0 0; font-size: 13px; line-height: 1.4; color: #ffd23a; }
 .wlabel.buff { color: #ff6a4a; }
 .wlabel.buff:empty { display: none; }
+/* settings, shop, run summary and the pause-screen build view */
+.setlist, .shoplist { display: grid; gap: 8px; text-align: left; }
+.setrow, .shoprow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.setrow span, .shoprow span { font-weight: 600; font-size: 15px; min-width: 0; }
+.setrow small, .shoprow small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.setctl { display: flex; align-items: center; gap: 8px; }
+.setctl b { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+.sbtn { font: 800 14px var(--body); color: var(--ink); background: rgba(255,255,255,.08); border: 2px solid var(--line); border-radius: 9px; min-width: 44px; min-height: 40px; padding: 4px 10px; cursor: pointer; }
+.sbtn[aria-pressed="true"] { border-color: var(--acid); color: var(--acid); }
+.sbtn:disabled { opacity: .45; cursor: not-allowed; }
+.sbtn.buy { border-color: var(--orange); color: var(--orange); }
+.pips { color: var(--orange); letter-spacing: 2px; font-size: 12px; }
+.coins { font: 22px var(--display); color: #ffd23a; }
+.summary { text-align: left; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.45; }
+.summary summary { cursor: pointer; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; color: var(--orange); }
+.summary p { margin: 6px 0; } .summary b { color: var(--ink); }
+.summary h4, .buildview h4 { margin: 10px 0 4px; font: 800 11px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--orange); }
+.dmgrow { display: grid; grid-template-columns: 110px minmax(0, 1fr) 54px; gap: 8px; align-items: center; margin: 3px 0; }
+.dmgrow i { display: block; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--orange), #ffd23a); width: var(--w); min-width: 2px; }
+.dmgrow b { text-align: right; font-variant-numeric: tabular-nums; }
+.build { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0; }
+.chip { font-size: 12px; background: rgba(255,154,31,.12); border: 1px solid rgba(255,154,31,.35); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.chip.gen { background: rgba(166,240,60,.1); border-color: rgba(166,240,60,.35); }
+.buildview { text-align: left; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+.buildview h4:first-child { margin-top: 2px; font-size: 13px; color: var(--ink); letter-spacing: .04em; }
+.evoline { margin: 2px 0 6px; color: #ffd23a; } .skinline { margin: 6px 0 0; color: var(--acid); }
+a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.menubtns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.ver { font-size: 11px; color: var(--muted); }
 /* keyboard or controller focus inside menus */
 .padnav .screen button:focus { outline: 3px solid var(--orange); outline-offset: 2px; }
 .overbtns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
@@ -242,7 +272,7 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
     </div>
     <button class="btn" id="playBtn" type="button">Play</button>
     <button class="daily" id="dailyBtn" type="button"><b>Daily challenge</b><span id="dailyTxt"></span></button>
-    <button class="ibtn wbtn" id="wardrobeBtn" type="button">Wardrobe: skins and hats</button>
+    <div class="menubtns"><button class="ibtn wbtn" id="wardrobeBtn" type="button">Wardrobe</button><button class="ibtn wbtn" id="shopBtn" type="button">Shop</button><button class="ibtn wbtn" id="settingsBtn" type="button">Settings</button></div>
     <div class="best" id="bestMenu"></div>
   </div>
 </div>
@@ -261,6 +291,25 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
   </div>
 </div>
 
+<div class="screen" id="settings" hidden>
+  <div class="card">
+    <h2>Settings</h2>
+    <div class="setlist" id="setList"></div>
+    <button class="btn" id="setDone" type="button">Done</button>
+    <div class="ver" id="verTxt"></div>
+  </div>
+</div>
+
+<div class="screen" id="shop" hidden>
+  <div class="card">
+    <h2>Shop</h2>
+    <p class="lede">Every run earns coins: 1 for every 25 ants, 1 for every 10 seconds survived, 5 per elite and 25 per boss. Upgrades here last forever.</p>
+    <div class="coins" id="shopCoins"></div>
+    <div class="shoplist" id="shopList"></div>
+    <button class="btn" id="shopDone" type="button">Done</button>
+  </div>
+</div>
+
 <div class="screen" id="levelup" hidden>
   <div class="card">
     <h2 id="luTitle">Level up!</h2>
@@ -274,8 +323,9 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
   <div class="card">
     <h2>Paused</h2>
     <p class="lede">The ants are waiting. Rudely.</p>
+    <div class="buildview" id="pauseBuild"></div>
     <button class="btn" id="resumeBtn" type="button">Keep going</button>
-    <button class="ibtn" id="quitBtn" type="button" style="justify-self:center">Quit to menu</button>
+    <div class="menubtns"><button class="ibtn wbtn" id="pauseSettings" type="button">Settings</button><a class="ibtn wbtn" id="bugPause" target="_blank" rel="noopener">Report a bug</a><button class="ibtn wbtn" id="quitBtn" type="button">Quit to menu</button></div>
   </div>
 </div>
 
@@ -288,9 +338,10 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
       <div><b id="rLevel">1</b><span>level</span></div>
     </div>
     <div class="unlocks" id="unlocks" hidden></div>
+    <details class="summary" open><summary>Run details</summary><div id="sumBody"></div></details>
     <div class="best" id="bestOver"></div>
     <button class="btn" id="againBtn" type="button">Play again</button>
-    <div class="overbtns"><button class="ibtn wbtn" id="overWardrobe" type="button">Wardrobe</button><button class="ibtn wbtn" id="overMenu" type="button">Menu</button></div>
+    <div class="overbtns"><button class="ibtn wbtn" id="overWardrobe" type="button">Wardrobe</button><button class="ibtn wbtn" id="overShop" type="button">Shop</button><button class="ibtn wbtn" id="overMenu" type="button">Menu</button><a class="ibtn wbtn" id="bugOver" target="_blank" rel="noopener">Report a bug</a></div>
   </div>
 </div>
 
@@ -300,10 +351,14 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
+const GAME_VERSION = '21';
+// player settings: volumes, effects toggles and a low-graphics mode for older phones
+const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
+const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
 let W = 0, H = 0, DPR = 1, ZOOM = 1, VW = 0, VH = 0, vignette = null;
 
 function resize() {
-  DPR = Math.min(1.5, window.devicePixelRatio || 1);
+  DPR = SET.low ? 1 : Math.min(1.5, window.devicePixelRatio || 1);
   W = innerWidth; H = innerHeight;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   ZOOM = Math.max(0.62, Math.min(1, Math.min(W, H) / 720));
@@ -333,7 +388,7 @@ function showBest(m) {
 }
 // lifetime progress for unlocking skins, plus the chosen skin and hat (a per-player convenience)
 function loadProg() {
-  const d = { kills: 0, bosses: 0, best: 0, runs: 0, skin: 'classic', hat: 'orange', diff: 'normal', ach: {}, pathWins: {} };
+  const d = { kills: 0, bosses: 0, best: 0, runs: 0, skin: 'classic', hat: 'orange', diff: 'normal', ach: {}, pathWins: {}, tips: {}, coins: 0, shop: {} };
   try { Object.assign(d, JSON.parse(localStorage.getItem('capy-prog') || '{}')); } catch (e) {}
   const b = loadBest(); if (b) d.best = Math.max(d.best, b.time);
   return d;
@@ -345,19 +400,19 @@ let prog = loadProg();
 let AC = null, muted = false, lastShot = 0, lastFlame = 0, lastBoom = 0;
 function audio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === 'suspended') AC.resume(); }
 function tone(freq, dur, type = 'square', vol = 0.06, slide = 0) {
-  if (!AC || muted) return;
+  if (!AC || muted || !SET.sfx) return;
   const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = type; o.frequency.setValueAtTime(freq, t);
   if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
-  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  g.gain.setValueAtTime(vol * SET.sfx, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur);
 }
 function noise(dur, vol = 0.15, lp = 900) {
-  if (!AC || muted) return;
+  if (!AC || muted || !SET.sfx) return;
   const t = AC.currentTime, n = Math.floor(AC.sampleRate * dur), buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
   for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
   const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
-  f.type = 'lowpass'; f.frequency.value = lp; s.buffer = buf; g.gain.value = vol;
+  f.type = 'lowpass'; f.frequency.value = lp; s.buffer = buf; g.gain.value = vol * SET.sfx;
   s.connect(f).connect(g).connect(AC.destination); s.start(t);
 }
 const later = (ms, fn) => setTimeout(fn, ms);
@@ -426,7 +481,7 @@ function musicStep(i, t, boss, lvl, spb) {
 function musicTick() {
   if (!AC || muted || !G || !['play', 'levelup', 'intro', 'bossdeath'].includes(state)) { music.next = 0; return; }
   if (!music.out) {
-    music.out = AC.createGain(); music.out.gain.value = 0.32; music.out.connect(AC.destination);
+    music.out = AC.createGain(); music.out.gain.value = 0.32 * SET.music; music.out.connect(AC.destination);
     const n = Math.floor(AC.sampleRate * 0.05); music.hat = AC.createBuffer(1, n, AC.sampleRate);
     const d = music.hat.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
   }
@@ -448,6 +503,7 @@ addEventListener('keydown', e => {
   keys.add(k);
   if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
   // only a fresh press of Space, Enter or Esc skips; held movement keys auto-repeat and used to skip it instantly
+  if (k === 'escape' && !$('settings').hidden) { closeSettings(); return; }
   if (state === 'intro') { if (!e.repeat && [' ', 'enter', 'escape'].includes(k)) skipIntro(); return; }
   if (state === 'bossdeath') { if (!e.repeat && [' ', 'enter', 'escape'].includes(k)) skipDeath(); return; }
   if (state === 'play') {
@@ -456,6 +512,7 @@ addEventListener('keydown', e => {
   } else if (state === 'paused' && (k === 'p' || k === 'escape')) pause(false);
   else if (state === 'levelup' && ['1', '2', '3', '4', '5', '6'].includes(k)) { const b = $('picks').children[+k - 1]; if (b) b.click(); }
   else if (k === 'escape' && !$('wardrobe').hidden) closeWardrobe();
+  else if (k === 'escape' && !$('shop').hidden) closeShop();
   if (k === 'c') toggleCam();
   if (k === 'm') toggleMute();
 });
@@ -486,7 +543,7 @@ addEventListener('pointerdown', () => document.body.classList.remove('padnav'));
 function padNav(dx, dy) {
   // move the focus to the nearest button in the pushed direction
   const scr = [...document.querySelectorAll('.screen')].find(el => !el.hidden); if (!scr) return;
-  const items = [...scr.querySelectorAll('button:not([disabled])')].filter(b => b.offsetParent !== null); if (!items.length) return;
+  const items = [...scr.querySelectorAll('button:not([disabled]), a[href]')].filter(b => b.offsetParent !== null); if (!items.length) return;
   document.body.classList.add('padnav');
   const cur = items.includes(document.activeElement) ? document.activeElement : null;
   if (!cur) { items[0].focus({ preventScroll: true }); items[0].scrollIntoView({ block: 'nearest' }); return; }
@@ -520,8 +577,11 @@ function pollPad(dt) {
       if (pad.navT <= 0) { const horiz = Math.abs(x) > Math.abs(y); padNav(horiz ? Math.sign(x) : 0, horiz ? 0 : Math.sign(y)); pad.navT = pad.held ? 0.16 : 0.35; pad.held = true; }
     } else { pad.held = false; pad.navT = 0; }
     const f = document.activeElement;
-    if (hit(0)) { if (f && f.tagName === 'BUTTON' && f.closest('.screen')) f.click(); else padNav(0, 1); }
-    if (hit(1)) { if (state === 'paused') pause(false); else if (!$('wardrobe').hidden) closeWardrobe(); }
+    if (hit(0)) { if (f && (f.tagName === 'BUTTON' || f.tagName === 'A') && f.closest('.screen')) f.click(); else padNav(0, 1); }
+    if (hit(1)) {
+      if (!$('settings').hidden) closeSettings(); else if (!$('shop').hidden) closeShop();
+      else if (state === 'paused') pause(false); else if (!$('wardrobe').hidden) closeWardrobe();
+    }
     if (hit(9)) {
       if (state === 'paused') pause(false);
       else if (!$('menu').hidden) start(prog.diff);
@@ -635,6 +695,8 @@ const GENERAL = [
   { id: 'regen',  ico: 'W', name: 'Hot Spring Soak', desc: 'Heal 1% of max health a second (half speed while being bitten)', max: 5, apply: p => p.regen += 0.01 },
   { id: 'magnet', ico: 'M', name: 'Snack Radar',     desc: 'Pull in seeds from further away',          max: 4, apply: p => p.magnet *= 1.5 },
   { id: 'orbit',  ico: 'O', name: 'Orange Orbit',    desc: 'An orange spins around you and bonks ants', max: 5, apply: p => { p.orbit++; p.orbitDmg += 4; } },
+  { id: 'drone',  ico: 'D', name: 'Drone Buddy',     desc: 'A sidekick drone that shoots the nearest ant. More levels, faster and harder', max: 5, side: true, apply: p => { p.side = 'drone'; p.sideLv++; } },
+  { id: 'rang',   ico: 'B', name: 'Boomerang',       desc: 'A sidekick boomerang that hits ants going out and coming back. More levels, more boomerangs', max: 5, side: true, apply: p => { p.side = 'rang'; p.sideLv++; } },
   { id: 'strike', ico: 'A', name: 'Chopper Pilot',   desc: 'Shorter airstrike cooldown and 4 more missiles', max: 3, apply: p => { p.strikeCdMax *= 0.75; p.strikeNeed = Math.round(p.strikeNeed * 0.8); p.missiles += 4; } }
 ];
 /* Difficulty and the daily challenge are sets of multipliers: ant health, speed and bite, how often
@@ -712,11 +774,12 @@ let state = 'menu', G = null;
 function newGame() {
   G = {
     t: 0, kills: 0, bossKills: 0, shake: 0, spawnAcc: 0, nextBoss: 120, mode: 'normal', D: rulesFor('normal'), hitStop: 0, hsCd: 0, flash: 0, flashCol: '255,255,255', toast: null,
-    nextElite: 45, nextPickup: 25, nextTunnel: 60, nextSap: 90, nextWave: 150, wave: null, dragonT: 0, chestsOpened: 0, bossClean: true, bossIdx: 0, boss: null, banner: null, intro: null, death: null, cam: { x: 0, y: 0 },
+    nextElite: 45, nextPickup: 25, lap: 0, bioK: 1, coins: 0, droneA: 0, droneCd: 0, rangCd: 0, drone: null, rangs: [],
+    stats: { dmg: {}, bosses: [], elites: 0, killer: 'the swarm' }, nextTunnel: 60, nextSap: 90, nextWave: 150, wave: null, dragonT: 0, chestsOpened: 0, bossClean: true, bossIdx: 0, boss: null, banner: null, intro: null, death: null, cam: { x: 0, y: 0 },
     p: { x: 0, y: 0, r: 17, hp: 100, maxHp: 100, speed: 175, magnet: 85, regen: 0, orbit: 0, orbitDmg: 14,
          xp: 0, level: 1, next: 5, inv: 0, aim: 0, aim2: 0, walk: 0, moving: false, flash: 0, flash2: 0, firing: false, spinT: 0, alt: false, target2: null,
          weapon: 'pistol', w: { ...PATHS.pistol.base }, wlv: {}, tier: 0, cd: 0, burstLeft: 0, burstT: 0, upg: {},
-         strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false },
+         strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0 },
     ants: [], bullets: [], spit: [], nades: [], booms: [], gems: [], melons: [], parts: [], texts: [], strikes: [], orbA: 0,
     chests: [], pickups: [], tunnels: [], puddles: []
   };
@@ -747,7 +810,7 @@ function spawnAnt(type, x, y) {
     const ang = Math.random() * Math.PI * 2, d = Math.hypot(VW, VH) / 2 + 60;
     x = p.x + Math.cos(ang) * d; y = p.y + Math.sin(ang) * d;
   }
-  const a = { type, ...T, x, y, hp: T.hp * (1 + G.t / 100) * G.D.hp, spd: T.spd * Math.min(1.45, 1 + G.t / 600) * G.D.spd, biteCd: 0, a: Math.atan2(p.y - y, p.x - x),
+  const a = { type, ...T, x, y, hp: T.hp * (1 + G.t / 100) * G.D.hp * (1 + 0.3 * G.lap), spd: T.spd * Math.min(1.45, 1 + G.t / 600) * G.D.spd, biteCd: 0, a: Math.atan2(p.y - y, p.x - x),
               walk: Math.random() * 6, hitT: 0, orbHit: 0, spitCd: rand(1, 3), chgCd: rand(1, 3), dashT: 0, burnT: 0, burnAcc: 0, burnDps: 0 };
   a.maxHp = a.hp; G.ants.push(a); return a;
 }
@@ -817,15 +880,17 @@ function spawnBoss() {
     }
     placeSegs(b);
   }
-  G.boss = b; G.bossClean = true; startIntro(b);
+  b.spawnT = G.t; G.boss = b; G.bossClean = true; startIntro(b);
 }
 
 /* ---------- combat helpers ---------- */
 function burst(x, y, col, n, spd = 160, size = 3) {
-  n = Math.min(n, 500 - G.parts.length);
+  n = Math.min(SET.low ? Math.ceil(n * 0.4) : n, 500 - G.parts.length);
   for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = rand(0.3, 1) * spd;
     G.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(0.3, 0.7), max: 0.7, col, size: rand(size * 0.6, size * 1.4) }); }
 }
+// which line of the run summary each kind of damage counts towards
+const STAT_SRC = { burn: 'burn', strike: 'airstrike', orbit: 'orbit', drone: 'drone', boomerang: 'boomerang' };
 function hitAnt(a, dmg, src) {
   if (a.proxy) a = a.proxy;
   if (a.dead) return;
@@ -833,9 +898,10 @@ function hitAnt(a, dmg, src) {
   if (a.shield > 0) { const s = Math.min(a.shield, dmg); a.shield -= s; dmg -= s; }
   if (a.shieldMax) a.shieldT = 0;
   a.hp -= dmg;
+  const sk = STAT_SRC[src] || 'gun'; G.stats.dmg[sk] = (G.stats.dmg[sk] || 0) + dmg;
   const quiet = src === 'fire' || src === 'burn';
   if (!quiet) a.hitT = a.boss ? 0.03 : 0.08;
-  if (!quiet && G.texts.length < 40 && Math.random() < 0.3) G.texts.push({ x: a.x + rand(-6, 6), y: a.y - a.r, txt: Math.round(dmg), life: 0.6 });
+  if (!quiet && SET.numbers && G.texts.length < 40 && Math.random() < 0.3) G.texts.push({ x: a.x + rand(-6, 6), y: a.y - a.r, txt: Math.round(dmg), life: 0.6 });
   if (a.hp <= 0) killAnt(a, src);
 }
 function killAnt(a, src) {
@@ -849,12 +915,14 @@ function killAnt(a, src) {
   if (a.boss) {
     // the loot drops at the end of the death animation (see updateDeath)
     G.boss = null; G.bossKills++; startDeath(a);
+    G.stats.bosses.push({ name: BOSSES[a.kind].name, secs: G.t - (a.spawnT || G.t) });
     if (G.bossClean) award('flawless');
     G.flash = 0.6; G.flashCol = '255,255,255'; buzz([60, 40, 140]);
   } else {
     G.gems.push({ x: a.x, y: a.y, v: a.xp, spin: Math.random() * 6 });
     if (Math.random() < 0.012) G.melons.push({ x: a.x, y: a.y });
     if (a.elite) {
+      G.stats.elites++;
       G.chests.push({ x: a.x, y: a.y }); burst(a.x, a.y, ELITES[a.elite].col, 30, 260, 5); burst(a.x, a.y, '#ffd23a', 16, 200, 4);
       hitStop(0.08); G.flash = Math.max(G.flash, 0.35); G.flashCol = '255,255,255'; buzz(40);
       if (a.elite === 'split') for (const s of [-1, 1]) spawnAnt(a.type, a.x + s * a.r, a.y - s * a.r * 0.5);
@@ -874,17 +942,20 @@ function explode(x, y, rad, dmg, src, fire) {
     if ((a.x - x) ** 2 + (a.y - y) ** 2 < (rad + a.r) ** 2) { seen.add(t); if (fire) { t.burnT = 2; t.burnDps = Math.max(t.burnDps || 0, 6); } hitAnt(t, dmg, src); }
   });
 }
-function damagePlayer(d) {
+function damagePlayer(d, from) {
   const p = G.p; if (state !== 'play') return;
+  if (from) G.stats.killer = from;
   d *= G.D.dmg; p.hp -= d; p.hurtT = 1.5; G.shake = Math.max(G.shake, 6); G.bossClean = false;
   if (p.inv <= 0) { p.inv = 0.2; sfx.hurt(); burst(p.x, p.y, '#e8503f', 6, 140, 3); buzz(35); }
   if (p.hp <= 0) { p.hp = 0; gameOver(); }
 }
+const TYPE_NAME = { worker: 'a worker ant', runner: 'a runner ant', soldier: 'a soldier ant', spitter: 'a spitter ant', cyber: 'a cyber ant', driller: 'a driller ant', jet: 'a jet ant', laser: 'a laser ant', mech: 'a mech ant' };
+const whoBit = a => { const b = a.proxy || a; return b.boss ? BOSSES[b.kind].name : (b.elite ? 'an elite ' : '') + (b.elite ? TYPE_NAME[b.type].replace(/^an? /, '') : TYPE_NAME[b.type]); };
 function bite(a, p, dt) {
   // every touching ant (or boss part) bites on its own timer, so getting surrounded is deadly at any level
   a.biteCd -= dt;
   if ((a.alt || 0) > 25 || a.biteCd > 0) return;
-  if ((a.x - p.x) ** 2 + (a.y - p.y) ** 2 < (a.r + p.r - 4) ** 2) { a.biteCd = 0.9; damagePlayer(a.dmg * (1 + G.t / 200)); }
+  if ((a.x - p.x) ** 2 + (a.y - p.y) ** 2 < (a.r + p.r - 4) ** 2) { a.biteCd = 0.9; damagePlayer(a.dmg * (1 + G.t / 200), whoBit(a)); }
 }
 function callStrike() {
   const p = G.p; if (p.strikeCd > 0 || p.strike < p.strikeNeed) return;
@@ -910,10 +981,26 @@ function usePickup(kind) {
   } else { p.rageT = 10; G.banner = { txt: 'RAGE! DOUBLE DAMAGE', life: 1.6 }; tone(110, 0.4, 'sawtooth', 0.08, 220); }
 }
 
+// first-run tips: each one shows once, ever, and waits its turn if another pop-up is on screen
+function tip(id, txt, sub) {
+  if (prog.tips[id] || (G.toast && G.toast.life > 0.4)) return;
+  prog.tips[id] = 1; saveProg(); G.toast = { txt, sub, life: 4.5, max: 4.5 };
+}
+function checkTips() {
+  const p = G.p, T = prog.tips;
+  if (!T.move && G.t > 1) tip('move', 'KEEP MOVING!', `Move with ${pad.gp ? 'the left stick' : TOUCH ? 'a finger dragged anywhere' : 'WASD or the arrow keys'}. Your gun fires all by itself.`);
+  else if (!T.seeds && G.t > 7 && G.gems.length) tip('seeds', 'GRAB THE SEEDS', 'Green seeds fill your XP bar. Each level-up lets you pick an upgrade.');
+  else if (!T.strike && p.strike >= p.strikeNeed && p.strikeCd <= 0) tip('strike', 'AIRSTRIKE READY!', pad.gp ? 'Press A to call in the chopper.' : TOUCH ? 'Tap the glowing round button to call in the chopper.' : 'Press Space to call in the chopper.');
+  else if (!T.elite && G.ants.some(a => a.elite)) tip('elite', 'ELITE ANT!', 'Glowing ants are tough, but they drop a treasure chest with a free upgrade.');
+  else if (!T.pickup && G.pickups.length) tip('pickup', 'POWER-UP NEARBY', 'Magnets pull in every seed, freeze bombs stop the ants and chillies double your damage.');
+  else if (!T.sap && G.puddles.length) tip('sap', 'STICKY SAP', 'Orange puddles slow you right down. Walk around them.');
+  else if (!T.evo && p.weapon !== 'pistol' && p.level >= 5) tip('evo', 'EVOLUTIONS', 'Every path can evolve into a super gun. The level-up and pause screens show what it needs.');
+}
+
 /* ---------- weapons ---------- */
 function addBullet(x, y, ang, spd, range, o) {
   G.bullets.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, life: range / spd * 1.15, hit: new Set(),
-                   dmg: o.dmg, pierce: o.pierce || 0, kb: o.kb || 0, rico: o.rico || 0, crit: !!o.crit, kind: o.kind || 'bullet' });
+                   dmg: o.dmg, pierce: o.pierce || 0, kb: o.kb || 0, rico: o.rico || 0, crit: !!o.crit, kind: o.kind || 'bullet', src: o.src });
 }
 function sniperShot(ang, gx, gy) {
   const w = G.p.w, crit = Math.random() < w.crit;
@@ -974,7 +1061,8 @@ function openLevelUp(src) {
   const tip = $('evoTip'); tip.hidden = !evo || !!p.evo || evoReady;
   if (!tip.hidden) tip.textContent = `Evolution: max out ${key.name} (${p.wlv[evo.key] || 0} of ${key.max}) and take ${gen.name}${p.upg[evo.gen] ? ' (done)' : ''} to unlock ${evo.name}.`;
   const wpool = path.upg.filter(u => (p.wlv[u.id] || 0) < u.max).map(u => ({ ...u, weapon: true }));
-  const gpool = GENERAL.filter(u => (p.upg[u.id] || 0) < u.max);
+  // sidekicks turn up from level 10, and once you have one only that one is offered
+  const gpool = GENERAL.filter(u => (p.upg[u.id] || 0) < u.max && (!u.side || (p.level >= 10 && (!p.side || p.side === u.id))));
   const take = arr => arr.length ? arr.splice(Math.floor(Math.random() * arr.length), 1)[0] : null;
   const choices = [take(wpool), take(wpool), take(gpool)].filter(Boolean);
   while (choices.length < 3 && (wpool.length || gpool.length)) choices.push(take(wpool.length ? wpool : gpool));
@@ -1123,6 +1211,14 @@ function bossUpdate(b, dt, p, dx, dy, d) {
 /* Borderlands-style boss reveal: freeze the action, pan to the boss, play its entrance, show a title card.
    Timeline (seconds): 0-1.0 warning and cinema bars on the capybara, 1.0-2.2 camera pans over,
    1.6 the boss starts emerging, 2.4 title card, 2.6 roar, 6.3 card leaves, 6.6-7.8 pan back. */
+/* Areas: after each full lap of bosses the map changes, the ants get tougher and they come faster.
+   The ground art is recoloured with blend modes rather than redrawn. */
+const BIOMES = [
+  { name: 'The Meadow' },
+  { name: 'Scorched Dunes', sub: 'The sun is hot and the ants are tougher.', tint: [['color', 'rgba(214,168,88,0.85)'], ['soft-light', 'rgba(255,225,160,0.4)']] },
+  { name: 'Midnight Swamp', sub: 'It is dark, and the swarm is even nastier.', tint: [['color', 'rgba(60,110,95,0.6)'], ['multiply', 'rgba(80,92,140,0.8)']], dark: 0.55 }
+];
+const biomeNow = () => BIOMES[G.lap === 0 ? 0 : 1 + (G.lap - 1) % 2];
 const TUN = { warn: 1.6, open: 4 }; // ant tunnels: seconds of warning, then seconds of ants pouring out
 const INTRO = { dur: 7.8, panIn: [1.0, 2.2], panOut: 1.2, anim: 1.6, card: 2.4, skipAfter: 1.2 };
 function startIntro(b) {
@@ -1205,6 +1301,10 @@ function updateDeath(dt) {
     for (let i = 0; i < 30; i++) { const a = rand(0, 6.283), r = rand(20, 90); G.gems.push({ x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r, v: 3, spin: Math.random() * 6 }); }
     G.melons.push({ x: b.x - 20, y: b.y }, { x: b.x + 20, y: b.y + 10 });
     G.banner = { txt: BOSSES[b.kind].name + ' DEFEATED!', life: 2.8 };
+    if (b.kind === 'mecha') { // a full lap of bosses: on to the next area
+      G.lap++; G.bioK = 0; const bio = biomeNow();
+      later(1800, () => { if (G && state !== 'menu') G.toast = { txt: 'ENTERING ' + bio.name.toUpperCase(), sub: bio.sub, life: 4.5, max: 4.5 }; });
+    }
   }
   stepFx(dt);
   if (t >= d.dur) {
@@ -1290,7 +1390,7 @@ function update(dt) {
   if (p.regen) p.hp = Math.min(p.maxHp, p.hp + p.regen * p.maxHp * (p.hurtT > 0 ? 0.5 : 1) * dt);
 
   // spawning
-  const perSec = Math.min(16, 0.9 + G.t / 18) * G.D.spawn;
+  const perSec = Math.min(16, 0.9 + G.t / 18) * G.D.spawn * (1 + 0.15 * G.lap);
   G.spawnAcc += perSec * dt;
   while (G.spawnAcc >= 1) { G.spawnAcc--; if (G.ants.length < 340) spawnAnt(pickType()); }
   if (G.t > 8 && Math.random() < dt * 0.04 * Math.min(4, G.t / 40)) { // swarm burst
@@ -1436,7 +1536,7 @@ function update(dt) {
       p.firing = true; sfx.flame();
       if (p.cd <= 0) { p.cd = 0.1 / p.rateMul; flameTick(want, gx, gy); }
       const m = muzzleOf('pyro', p.tier), fx = gx + Math.cos(want) * m, fy = gy + Math.sin(want) * m;
-      for (let i = 0; i < 4 && G.parts.length < 520; i++) {
+      for (let i = 0; i < (SET.low ? 2 : 4) && G.parts.length < 520; i++) {
         const a = want + rand(-w.cone, w.cone) * 0.8, s = w.range / 0.23 * rand(0.75, 1.05);
         G.parts.push({ x: fx, y: fy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.32, max: 0.32, flame: true, size: rand(5, 9), fr: 0.96 });
       }
@@ -1473,9 +1573,9 @@ function update(dt) {
   const bulletHit = b => a => {
     if (a.dead) return; const t = a.proxy || a; if (b.hit.has(t)) return;
     if ((a.x - b.x) ** 2 + (a.y - b.y) ** 2 < (a.r + 4) ** 2) {
-      b.hit.add(t); hitAnt(t, b.dmg); burst(b.x, b.y, '#ffd27a', 2, 80, 2);
+      b.hit.add(t); hitAnt(t, b.dmg, b.src); burst(b.x, b.y, '#ffd27a', 2, 80, 2);
       if ((b.kind === 'snipe' || b.kind === 'rail') && (b.crit || t.maxHp >= 150)) hitStop(0.04);
-      if (b.crit && G.texts.length < 40) G.texts.push({ x: a.x, y: a.y - a.r - 10, txt: 'CRIT!', life: 0.8, crit: true });
+      if (b.crit && SET.numbers && G.texts.length < 40) G.texts.push({ x: a.x, y: a.y - a.r - 10, txt: 'CRIT!', life: 0.8, crit: true });
       if (b.kb && !t.boss && !a.proxy) { const v = Math.hypot(b.vx, b.vy); a.x += b.vx / v * b.kb; a.y += b.vy / v * b.kb; }
       if (b.rico > 0) { // bounce on to the nearest ant not already hit
         let nb = null, nd = 280 * 280;
@@ -1517,12 +1617,47 @@ function update(dt) {
     }
   }
 
+  // sidekicks: a drone that hovers by your shoulder and shoots, or boomerangs that go out and come back
+  if (p.side === 'drone') {
+    G.droneA += dt * 1.6;
+    const dx2 = p.x + Math.cos(G.droneA) * 40, dy2 = p.y - 42 + Math.sin(G.droneA) * 10;
+    G.drone = { x: dx2, y: dy2, aim: G.drone ? G.drone.aim : 0 };
+    if ((G.droneCd -= dt) <= 0) {
+      let tgt = null, bd = 380 * 380;
+      for (const a of G.ants) { if (a.dead) continue; const dd = (a.x - dx2) ** 2 + (a.y - dy2) ** 2; if (dd < bd) { bd = dd; tgt = a; } }
+      if (tgt) {
+        G.droneCd = 0.7 / (1 + 0.25 * (p.sideLv - 1)); const ang = Math.atan2(tgt.y - dy2, tgt.x - dx2); G.drone.aim = ang;
+        addBullet(dx2, dy2, ang, 700, 420, { dmg: 9 * (1 + 0.45 * (p.sideLv - 1)) * (1 + G.t / 240), src: 'drone' });
+      }
+    }
+  } else if (p.side === 'rang' && (G.rangCd -= dt) <= 0) {
+    let tgt = null, bd = 320 * 320;
+    for (const a of G.ants) { if (a.dead) continue; const dd = (a.x - p.x) ** 2 + (a.y - p.y) ** 2; if (dd < bd) { bd = dd; tgt = a; } }
+    if (tgt) {
+      G.rangCd = 1.5; const n = 1 + Math.floor((p.sideLv - 1) / 2), base = Math.atan2(tgt.y - p.y, tgt.x - p.x);
+      for (let i = 0; i < n; i++) G.rangs.push({ x: p.x, y: p.y, a: base + (i - (n - 1) / 2) * 0.55, t: 0, spin: 0, hit: new Set(), dmg: 11 * (1 + 0.4 * (p.sideLv - 1)) * (1 + G.t / 240) });
+    }
+  }
+  for (const r of G.rangs) {
+    r.t += dt; r.spin += dt * 18;
+    if (r.t < 0.55) { const sp = 560 * (1 - r.t / 0.55) + 40; r.x += Math.cos(r.a) * sp * dt; r.y += Math.sin(r.a) * sp * dt; }
+    else {
+      if (!r.back) { r.back = true; r.hit.clear(); } // it can hit the same ants again on the way back
+      const dx3 = p.x - r.x, dy3 = p.y - r.y, d3 = Math.hypot(dx3, dy3) || 1, sp = Math.min(720, 200 + (r.t - 0.55) * 900);
+      r.x += dx3 / d3 * sp * dt; r.y += dy3 / d3 * sp * dt; if (d3 < 20) r.dead = true;
+    }
+    if (r.t > 4) r.dead = true;
+    near(r.x, r.y, 40, a => { if (a.dead) return; const t = a.proxy || a; if (r.hit.has(t)) return; if ((a.x - r.x) ** 2 + (a.y - r.y) ** 2 < (a.r + 12) ** 2) { r.hit.add(t); hitAnt(t, r.dmg, 'boomerang'); } });
+  }
+  G.bioK = Math.min(1, G.bioK + dt * 0.5);
+  checkTips();
+
   // orange orbit
   if (p.orbit) {
     G.orbA += dt * 3.2;
     for (let i = 0; i < p.orbit; i++) {
       const ang = G.orbA + i * Math.PI * 2 / p.orbit, ox = p.x + Math.cos(ang) * 72, oy = p.y + Math.sin(ang) * 72;
-      near(ox, oy, 40, a => { if (!a.dead && a.orbHit <= 0 && (a.x - ox) ** 2 + (a.y - oy) ** 2 < (a.r + 11) ** 2) { a.orbHit = 0.35; hitAnt(a, p.orbitDmg); burst(ox, oy, '#ff9a1f', 3, 90, 2); } });
+      near(ox, oy, 40, a => { if (!a.dead && a.orbHit <= 0 && (a.x - ox) ** 2 + (a.y - oy) ** 2 < (a.r + 11) ** 2) { a.orbHit = 0.35; hitAnt(a, p.orbitDmg, 'orbit'); burst(ox, oy, '#ff9a1f', 3, 90, 2); } });
     }
   }
 
@@ -1530,7 +1665,7 @@ function update(dt) {
   for (const s of G.spit) {
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     if (s.life <= 0) s.dead = true;
-    else if ((s.x - p.x) ** 2 + (s.y - p.y) ** 2 < (p.r + s.r) ** 2) { s.dead = true; damagePlayer(s.dmg); }
+    else if ((s.x - p.x) ** 2 + (s.y - p.y) ** 2 < (p.r + s.r) ** 2) { s.dead = true; damagePlayer(s.dmg, { acid: 'spitter acid', laser: 'a laser blast', feather: "Talon's feathers" }[s.kind]); }
   }
 
   // airstrikes
@@ -1557,7 +1692,7 @@ function update(dt) {
   const alive = x => !x.dead;
   G.ants = G.ants.filter(alive); G.bullets = G.bullets.filter(alive); G.spit = G.spit.filter(alive); G.nades = G.nades.filter(alive);
   G.gems = G.gems.filter(alive); G.melons = G.melons.filter(alive); G.strikes = G.strikes.filter(alive);
-  G.chests = G.chests.filter(alive); G.pickups = G.pickups.filter(alive); G.tunnels = G.tunnels.filter(alive); G.puddles = G.puddles.filter(alive);
+  G.rangs = G.rangs.filter(alive); G.chests = G.chests.filter(alive); G.pickups = G.pickups.filter(alive); G.tunnels = G.tunnels.filter(alive); G.puddles = G.puddles.filter(alive);
   if (G.gems.length > 400) { const extra = G.gems.splice(0, G.gems.length - 400); G.gems[0].v += extra.reduce((s, g) => s + g.v, 0); }
   G.cam.x = p.x; G.cam.y = p.y;
 
@@ -2187,11 +2322,17 @@ function draw() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.fillStyle = '#3c6b2f'; ctx.fillRect(0, 0, W, H);
   if (!G) return;
-  const p = G.p, sh = G.shake;
+  const p = G.p, sh = SET.shake ? G.shake : 0;
   const cx = G.cam.x + (sh ? rand(-sh, sh) * 0.5 : 0), cy = G.cam.y + (sh ? rand(-sh, sh) * 0.5 : 0);
   const k = DPR * ZOOM, ox = DPR * (W / 2 - cx * ZOOM), oy = DPR * (H / 2 - cy * ZOOM);
   ctx.setTransform(k, 0, 0, k, ox, oy);
   drawGround(cx, cy);
+  const bio = biomeNow();
+  if (bio.tint) { // recolour the ground for this area, fading in as you arrive
+    ctx.globalAlpha = G.bioK;
+    for (const [op, col] of bio.tint) { ctx.globalCompositeOperation = op; ctx.fillStyle = col; ctx.fillRect(cx - VW / 2 - 20, cy - VH / 2 - 20, VW + 40, VH + 40); }
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
   const inV = (x, y, m = 60) => Math.abs(x - cx) < VW / 2 + m && Math.abs(y - cy) < VH / 2 + m;
 
   // sticky sap puddles and ant tunnels lie on the ground under everything
@@ -2307,6 +2448,22 @@ function draw() {
   ctx.fill(); ctx.globalCompositeOperation = 'source-over';
   if (p.w.dragon) { ctx.strokeStyle = `rgba(255,130,40,${0.3 + 0.1 * Math.sin(G.t * 8)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, 100, 0, 6.283); ctx.stroke(); }
   drawCapy();
+  // sidekicks
+  for (const r of G.rangs) {
+    ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.spin); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#5a3615'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-10, 5); ctx.lineTo(0, -5); ctx.lineTo(10, 5); ctx.stroke();
+    ctx.strokeStyle = '#d0904a'; ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+  }
+  if (p.side === 'drone' && G.drone) {
+    const d = G.drone; ctx.save(); ctx.translate(d.x, d.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(0, 44, 9, 3, 0, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = '#2b2f36'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-11, -4); ctx.lineTo(11, -4); ctx.stroke();
+    ctx.fillStyle = '#6b7580'; ctx.strokeStyle = '#2b2f36'; ctx.lineWidth = 1.5; rr(-9, -5, 18, 11, 4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#4ad8ff'; ctx.beginPath(); ctx.arc(Math.cos(d.aim) * 4, 1 + Math.sin(d.aim) * 2, 2.6, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = 'rgba(225,235,245,0.85)'; ctx.lineWidth = 1.6;
+    for (const sx of [-11, 11]) { const a = G.t * 40 + sx; ctx.beginPath(); ctx.moveTo(sx - Math.cos(a) * 7, -6 - Math.sin(a) * 1.5); ctx.lineTo(sx + Math.cos(a) * 7, -6 + Math.sin(a) * 1.5); ctx.stroke(); }
+    ctx.restore();
+  }
   for (const b of bosses) if (b.kind === 'harpy') drawBoss(b, k, ox, oy); // fliers draw over everything on the ground
   if (G.death && G.death.b.kind === 'harpy') { drawDeath(k, ox, oy); ctx.setTransform(k, 0, 0, k, ox, oy); }
   if (p.orbit) for (let i = 0; i < p.orbit; i++) { const ang = G.orbA + i * Math.PI * 2 / p.orbit; drawOrange(p.x + Math.cos(ang) * 72, p.y + Math.sin(ang) * 72); }
@@ -2387,6 +2544,10 @@ function draw() {
   // screen space
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
+  if (bio.dark) { // night: a pool of light around the capybara, darkness beyond
+    const sx = (p.x - cx) * ZOOM + W / 2, sy = (p.y - cy) * ZOOM + H / 2, g = ctx.createRadialGradient(sx, sy, Math.min(W, H) * 0.22, sx, sy, Math.max(W, H) * 0.7);
+    g.addColorStop(0, 'rgba(4,8,24,0)'); g.addColorStop(1, `rgba(4,8,24,${bio.dark * G.bioK})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
   if (p.hp / p.maxHp < 0.3 && state === 'play') { ctx.fillStyle = `rgba(200,20,20,${0.12 + Math.sin(G.t * 6) * 0.06})`; ctx.fillRect(0, 0, W, H); }
   if (G.intro) { // spotlight on the boss plus cinema bars
     const I = G.intro, b = I.b, kk = I.t < 0.6 ? I.t / 0.6 : I.t > I.dur - 0.6 ? Math.max(0, (I.dur - I.t) / 0.6) : 1;
@@ -2436,13 +2597,16 @@ function draw() {
     ctx.fillStyle = 'rgba(255,154,31,0.6)'; ctx.beginPath(); ctx.arc(joy.ox + dx * kk, joy.oy + dy * kk, 22, 0, 6.283); ctx.fill();
   }
   if (G.toast) { // achievement and milestone pop-ups
-    const t = G.toast, a = Math.max(0, Math.min(1, t.life * 2, (4 - t.life) * 5)), w = Math.min(W - 32, 380), x = W / 2 - w / 2, y = W < 480 ? Math.max(150, H * 0.21) : Math.max(96, H * 0.17);
+    const t = G.toast, a = Math.max(0, Math.min(1, t.life * 2, ((t.max || 4) - t.life) * 5)), w = Math.min(W - 32, 400), x = W / 2 - w / 2, y = W < 480 ? Math.max(150, H * 0.21) : Math.max(96, H * 0.17);
+    ctx.font = '600 13px Rubik, system-ui, sans-serif'; const lines = []; let cur = ''; // wrap the line under the title
+    for (const word of (t.sub || '').split(' ')) { const tryL = cur ? cur + ' ' + word : word; if (cur && ctx.measureText(tryL).width > w - 28) { lines.push(cur); cur = word; } else cur = tryL; }
+    if (cur) lines.push(cur);
     ctx.globalAlpha = a; ctx.fillStyle = 'rgba(20,14,4,0.88)'; ctx.strokeStyle = '#ffd23a'; ctx.lineWidth = 2;
-    rr(x, y, w, 54, 12); ctx.fill(); ctx.stroke(); ctx.textAlign = 'center';
+    rr(x, y, w, 38 + lines.length * 17, 12); ctx.fill(); ctx.stroke(); ctx.textAlign = 'center';
     ctx.fillStyle = '#ffd23a'; ctx.font = `${Math.min(20, w / 16)}px "Lilita One", Impact, sans-serif`; ctx.fillText(t.txt, W / 2, y + 23);
-    ctx.fillStyle = '#f6efe2'; ctx.font = '600 13px Rubik, system-ui, sans-serif'; ctx.fillText(t.sub, W / 2, y + 42); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#f6efe2'; ctx.font = '600 13px Rubik, system-ui, sans-serif'; lines.forEach((l, i) => ctx.fillText(l, W / 2, y + 42 + i * 17)); ctx.globalAlpha = 1;
   }
-  if (G.flash > 0) { ctx.fillStyle = `rgba(${G.flashCol},${Math.min(0.55, G.flash) * (REDUCED ? 0.3 : 1)})`; ctx.fillRect(0, 0, W, H); }
+  if (G.flash > 0 && SET.flash) { ctx.fillStyle = `rgba(${G.flashCol},${Math.min(0.55, G.flash) * (REDUCED ? 0.3 : 1)})`; ctx.fillRect(0, 0, W, H); }
   if (G.banner && !G.intro) {
     ctx.globalAlpha = Math.min(1, G.banner.life * 2);
     ctx.font = `${Math.min(44, W / 14)}px "Lilita One", Impact, sans-serif`; ctx.textAlign = 'center';
@@ -2480,6 +2644,10 @@ function start(mode) {
   // unlocked skins carry a stat bonus
   const worn = SKINS.find(s => s.id === prog.skin && isUnlocked(s)) || SKINS[0], bn = worn.bonus || {}, p = G.p;
   p.dmgMul = (1 + (bn.dmg || 0)) * D.pdmg; p.rateMul = 1 + (bn.rate || 0); p.xpMul = (1 + (bn.xp || 0)) * D.xp;
+  // permanent shop upgrades
+  const sh = lv => prog.shop[lv] || 0;
+  p.maxHp += 10 * sh('hp'); p.dmgMul *= 1 + 0.04 * sh('dmg'); p.speed *= 1 + 0.03 * sh('speed'); p.magnet *= 1 + 0.1 * sh('magnet');
+  p.xpMul *= 1 + 0.04 * sh('xp'); p.strikeNeed = Math.round(p.strikeNeed * (1 - 0.06 * sh('strike')));
   p.speed *= 1 + (bn.speed || 0); p.maxHp = p.hp = Math.round(p.maxHp * (1 + (bn.hp || 0)) * D.php);
   if (mode === 'daily') { // the daily challenge hands you today's path straight away
     const r = dailyRules(); p.weapon = r.path; p.w = { ...PATHS[r.path].base };
@@ -2489,7 +2657,7 @@ function start(mode) {
   $('hud').hidden = false; $('strikeBtn').hidden = false; last = performance.now();
 }
 function pause(on) {
-  if (on && state === 'play') { state = 'paused'; $('paused').hidden = false; $('resumeBtn').focus({ preventScroll: true }); }
+  if (on && state === 'play') { state = 'paused'; $('pauseBuild').innerHTML = buildView(); $('bugPause').href = bugUrl(); $('paused').hidden = false; $('resumeBtn').focus({ preventScroll: true }); }
   else if (!on && state === 'paused') { state = 'play'; $('paused').hidden = true; last = performance.now(); }
 }
 function gameOver() {
@@ -2502,13 +2670,115 @@ function gameOver() {
   // add this run to lifetime progress and announce anything it unlocked
   // easy runs don't count towards survival unlocks
   const before = G.unlocked0 || [];
-  prog.kills += G.kills; prog.bosses += G.bossKills; if (m !== 'easy') prog.best = Math.max(prog.best, G.t); prog.runs++; saveProg();
+  G.coins = Math.floor(G.kills / 25 + G.t / 10 + G.stats.elites * 5 + G.bossKills * 25);
+  prog.kills += G.kills; prog.bosses += G.bossKills; if (m !== 'easy') prog.best = Math.max(prog.best, G.t); prog.runs++; prog.coins += G.coins; saveProg();
+  $('sumBody').innerHTML = runSummary(); $('bugOver').href = bugUrl();
   const fresh = SKINS.concat(HATS).filter(it => isUnlocked(it) && !before.includes(it));
   const box = $('unlocks'); box.hidden = !fresh.length;
   box.innerHTML = fresh.map(it => `<div><b>Unlocked: ${it.name}${HATS.includes(it) ? ' hat' : ''}</b>${it.bonus ? ' \u00b7 ' + it.perk : ''}</div>`).join('') + (fresh.length ? '<small>Put it on in the Wardrobe.</small>' : '');
   setTimeout(() => { $('over').hidden = false; $('strikeBtn').hidden = true; $('againBtn').focus({ preventScroll: true }); }, 700);
   sfx.boom();
 }
+/* ---------- build view, run summary, bug reports ---------- */
+const fmtNum = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'k' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n));
+function buildChips(p) {
+  const path = PATHS[p.weapon], out = [];
+  for (const u of path.upg || []) if (p.wlv[u.id]) out.push(`<span class="chip">${u.name} ${p.wlv[u.id]}/${u.max}</span>`);
+  for (const u of GENERAL) if (p.upg[u.id]) out.push(`<span class="chip gen">${u.name} ${p.upg[u.id]}/${u.max}</span>`);
+  return out.join('');
+}
+function buildText(p) {
+  const path = PATHS[p.weapon], out = [];
+  for (const u of path.upg || []) if (p.wlv[u.id]) out.push(`${u.name} ${p.wlv[u.id]}`);
+  for (const u of GENERAL) if (p.upg[u.id]) out.push(`${u.name} ${p.upg[u.id]}`);
+  return out.join(', ') || 'none';
+}
+function buildView() {
+  const p = G.p, path = PATHS[p.weapon], evo = EVOS[p.weapon], sk = SKINS.find(x => x.id === prog.skin && isUnlocked(x));
+  let line = 'Choose a path at your next level-up.';
+  if (p.evo) line = 'Evolved into ' + p.evo + '!';
+  else if (evo) {
+    const key = path.upg.find(u => u.id === evo.key), gen = GENERAL.find(u => u.id === evo.gen);
+    line = `To evolve into ${evo.name}: ${key.name} ${p.wlv[evo.key] || 0}/${key.max} and ${gen.name} ${p.upg[evo.gen] ? '(done)' : '(not yet)'}`;
+  }
+  return `<h4>${p.evo || path.name} \u00b7 level ${p.level}</h4><p class="evoline">${line}</p><div class="build">${buildChips(p) || '<span class="chip">No upgrades yet</span>'}</div>` +
+    (sk && sk.perk ? `<p class="skinline">${sk.name} skin: ${sk.perk}</p>` : '');
+}
+function runSummary() {
+  const p = G.p, S = G.stats, tot = Object.values(S.dmg).reduce((a, b) => a + b, 0) || 1;
+  const lab = { gun: p.evo || PATHS[p.weapon].name, burn: 'Burning', airstrike: 'Airstrikes', orbit: 'Orange orbit', drone: 'Drone buddy', boomerang: 'Boomerang' };
+  const rows = Object.entries(S.dmg).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    .map(([k, v]) => `<div class="dmgrow"><span>${lab[k] || k}</span><i style="--w:${(v / tot * 100).toFixed(1)}%"></i><b>${fmtNum(v)}</b></div>`).join('');
+  const bosses = S.bosses.length ? S.bosses.map(b => `${b.name} (${fmt(b.secs)})`).join(', ') : 'none yet';
+  return `<p><b>Killed by</b> ${S.killer}</p><p><b>Area</b> ${biomeNow().name} \u00b7 <b>Bosses beaten</b> ${bosses}</p>` +
+    `<p><b>Elites</b> ${S.elites} \u00b7 <b>Chests</b> ${G.chestsOpened} \u00b7 <b>Coins earned</b> ${G.coins}</p>` +
+    `<h4>Damage dealt</h4>${rows || '<p>None</p>'}<h4>Build</h4><div class="build">${buildChips(p) || '<span class="chip">No upgrades</span>'}</div>`;
+}
+// opens a GitHub issue with the run details filled in; the tester adds what happened
+function bugUrl() {
+  const lines = ['**What happened?**', '', '', '**What did you expect to happen?**', '', '', '---',
+    `Version: ${GAME_VERSION}`, `Device: ${navigator.userAgent}`, `Screen: ${innerWidth}x${innerHeight}${TOUCH ? ', touch' : ''}${pad.gp ? ', controller' : ''}`];
+  if (G && G.t > 0) { const p = G.p; lines.push(`Mode: ${MODE_NAME[G.mode]}`, `Run: ${fmt(G.t)}, level ${p.level}, ${G.kills} ants, area ${biomeNow().name}`, `Path: ${p.evo || PATHS[p.weapon].name}`, `Upgrades: ${buildText(p)}`); }
+  return 'https://github.com/PetrieUKDS/capy-gunner/issues/new?title=' + encodeURIComponent('Bug: ') + '&body=' + encodeURIComponent(lines.join('\n'));
+}
+
+/* ---------- settings ---------- */
+let settingsFrom = 'menu';
+function openSettings(from) {
+  settingsFrom = from; $(from === 'paused' ? 'paused' : 'menu').hidden = true; $('settings').hidden = false; buildSettings();
+  $('verTxt').textContent = 'Version ' + GAME_VERSION; setTimeout(() => $('setDone').focus({ preventScroll: true }), 50);
+}
+function closeSettings() { $('settings').hidden = true; $(settingsFrom === 'paused' ? 'paused' : 'menu').hidden = false; }
+function buildSettings(keep) {
+  const vol = (k, name) => `<div class="setrow"><span>${name}</span><div class="setctl"><button class="sbtn" type="button" data-k="${k}" data-d="-1" aria-label="${name} down">\u2212</button><b>${Math.round(SET[k] * 100)}%</b><button class="sbtn" type="button" data-k="${k}" data-d="1" aria-label="${name} up">+</button></div></div>`;
+  const tog = (k, name, sub) => `<div class="setrow"><span>${name}${sub ? `<small>${sub}</small>` : ''}</span><button class="sbtn" type="button" data-k="${k}" aria-pressed="${SET[k]}">${SET[k] ? 'On' : 'Off'}</button></div>`;
+  $('setList').innerHTML = vol('music', 'Music') + vol('sfx', 'Sound effects') + tog('shake', 'Screen shake') + tog('flash', 'Screen flash', 'The white flash on big hits') +
+    tog('numbers', 'Damage numbers') + tog('low', 'Low graphics', 'Fewer particles and a lower-resolution screen, for older phones');
+  if (keep) { const b = $('setList').querySelector(`[data-k="${keep[0]}"]${keep[1] ? `[data-d="${keep[1]}"]` : ''}`); if (b) b.focus({ preventScroll: true }); }
+}
+$('setList').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return; const k = b.dataset.k, d = b.dataset.d;
+  if (d) SET[k] = Math.round(clamp(SET[k] + d * 0.2, 0, 1) * 10) / 10; else SET[k] = !SET[k];
+  saveSet(); if (music.out) music.out.gain.value = 0.32 * SET.music; if (k === 'low') resize();
+  buildSettings([k, d]);
+};
+$('settingsBtn').onclick = () => openSettings('menu'); $('pauseSettings').onclick = () => openSettings('paused'); $('setDone').onclick = closeSettings;
+
+/* ---------- shop ---------- */
+const SHOP = [
+  { id: 'hp',     name: 'Tough Hide',     desc: '+10 starting max health',        max: 5, cost: 40 },
+  { id: 'dmg',    name: 'Sharp Teeth',    desc: '+4% damage',                     max: 5, cost: 60 },
+  { id: 'speed',  name: 'Quick Paws',     desc: '+3% move speed',                 max: 5, cost: 40 },
+  { id: 'magnet', name: 'Big Nose',       desc: '+10% seed pickup range',         max: 5, cost: 30 },
+  { id: 'xp',     name: 'Study Hard',     desc: '+4% XP from seeds',              max: 5, cost: 50 },
+  { id: 'strike', name: 'Pilot Training', desc: 'Airstrike charges 6% faster',    max: 4, cost: 50 }
+];
+let shopFrom = 'menu';
+function openShop(from) { shopFrom = from; $('menu').hidden = true; $('over').hidden = true; $('shop').hidden = false; buildShop(); setTimeout(() => $('shopDone').focus({ preventScroll: true }), 50); }
+function closeShop() { $('shop').hidden = true; if (shopFrom === 'over') $('over').hidden = false; else { $('menu').hidden = false; buildMenu(); } }
+function buildShop(keep) {
+  $('shopCoins').textContent = prog.coins.toLocaleString() + ' coins';
+  $('shopList').innerHTML = SHOP.map(it => {
+    const lv = prog.shop[it.id] || 0, cost = it.cost * (lv + 1), maxed = lv >= it.max;
+    return `<div class="shoprow"><span>${it.name} <span class="pips">${'\u25cf'.repeat(lv)}${'\u25cb'.repeat(it.max - lv)}</span><small>${it.desc} per level</small></span>` +
+      `<button class="sbtn buy" type="button" data-id="${it.id}" ${maxed || prog.coins < cost ? 'disabled' : ''}>${maxed ? 'Maxed' : 'Buy \u00b7 ' + cost}</button></div>`;
+  }).join('');
+  if (keep) { const b = $('shopList').querySelector(`[data-id="${keep}"]`); (b && !b.disabled ? b : $('shopDone')).focus({ preventScroll: true }); }
+}
+$('shopList').onclick = e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return; const it = SHOP.find(x => x.id === b.dataset.id), lv = prog.shop[it.id] || 0, cost = it.cost * (lv + 1);
+  if (prog.coins < cost || lv >= it.max) return;
+  prog.coins -= cost; prog.shop[it.id] = lv + 1; saveProg(); sfx.level(); buildShop(it.id);
+};
+$('shopBtn').onclick = () => openShop('menu'); $('overShop').onclick = () => openShop('over'); $('shopDone').onclick = closeShop;
+
+/* ---------- install as an app ---------- */
+// on the hosted site (not inside claude.ai) the game can be added to a home screen and played offline
+if ('serviceWorker' in navigator && location.hostname.endsWith('github.io')) {
+  for (const [rel, href] of [['manifest', 'manifest.webmanifest'], ['apple-touch-icon', 'icons/apple-touch-icon.png']]) { const l = document.createElement('link'); l.rel = rel; l.href = href; document.head.appendChild(l); }
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
 function toggleCam() { const on = cv.classList.toggle('thermal'); $('camBtn').textContent = on ? 'CAM: HEAT' : 'CAM'; }
 function toggleMute() { muted = !muted; $('muteBtn').textContent = muted ? 'SOUND OFF' : 'SOUND ON'; }
 
