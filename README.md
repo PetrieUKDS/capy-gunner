@@ -28,7 +28,7 @@ python -m http.server 8000
 - **Elite ants** (splitter, shielded, speedy) that drop treasure chests with a free upgrade.
 - **Map power-ups** (seed magnet, freeze bomb, rage chilli) and **hazards** (ant tunnels, sticky sap, swarm waves).
 - **Easy, Normal and Nightmare** difficulty (Nightmare unlocks after a 10-minute run), plus a **daily challenge** with a fixed path and twist each day.
-- **Wardrobe**: capybara skins with stat bonuses and hats, some unlocked by progress and achievements.
+- **Wardrobe**: capybara skins with stat bonuses and hats, unlocked by progress and achievements. The late-game ones take real effort: the Mummy and Bog Beast skins for beating the Iron Sphinx and Octo-Tron, Inferno for a 30-minute run, Diamond for 100,000 kills, and the Pharaoh, Samurai, Laurels and Antennae hats for 40 boss kills, beating all 15 bosses, beating a Gauntlet closer and surviving 20 minutes on Nightmare.
 - **Heavy weapons** on reaching the Dunes: a second gun that fires alongside your first (Tesla Coil, Missile Pod, Saw Launcher or Frost Cannon), with its own upgrades and evolution.
 - **Sidekicks** from level 10: a drone buddy or a boomerang, levelled up separately from your gun.
 - **New areas** after each lap of all five bosses: Scorched Dunes (sand, cacti, sandstone) and the night-time Midnight Swamp (moss, pools, glowing mushrooms), with tougher, faster swarms. Each area swaps the ants for its own creatures (scarabs, scorpions, cobras and robo-wasps in the Dunes; leeches, frogs, snapping turtles and robo-crocs in the Swamp), which keep the same roles as the ants they replace.
