@@ -2,9 +2,9 @@
 
 A browser survival auto-shooter. Ant monsters pour out of the ground and never stop; your capybara's gun fires by itself at the nearest one. Keep moving, grab the seeds to level up, pick a weapon path, and survive the bosses that turn up every two minutes.
 
-Play it at https://petrieukds.github.io/capy-gunner/. On a phone you can add it to your home screen and it works offline.
+Play it at https://petrieuk.co.uk/games/capybara-with-a-gun/. On a phone you can add it to your home screen and it works offline.
 
-The whole game is one file, `index.html`, with all its art embedded. `manifest.webmanifest`, `sw.js` and `icons/` only make the hosted version installable. Open it in a browser to play, or serve the folder:
+The whole game is one file, `index.html`, with all its art embedded. `fonts/` holds its two fonts (Lilita One and Rubik, under the SIL Open Font License), and `manifest.webmanifest`, `sw.js` and `icons/` only make the hosted version installable. Open it in a browser to play, or serve the folder:
 
 ```bash
 python -m http.server 8000
@@ -33,9 +33,15 @@ python -m http.server 8000
 - **Shop**: coins earned every run buy permanent upgrades (health, damage, speed, pickup range, XP, airstrike charge).
 - **Run summary** after each death (what killed you, boss times, damage by source, your build) and a build view on the pause screen.
 - **Settings** for music and sound volume, screen shake, flashes, damage numbers and a low-graphics mode.
-- First-run tips, and a **Report a bug** button that opens a GitHub issue with your run details filled in.
+- First-run tips, and a **Report a bug** button that fills in your run details (as an email on petrieuk.co.uk, or a GitHub issue on the test build).
 - Music, hit-stop, screen shake, phone and controller support.
 
 Progress, best runs and cosmetics are saved in the browser's local storage.
 
 Art made with Pixa.
+
+## Copyright
+
+Copyright © 2026 Steven Petrie, trading as PetrieUK. All rights reserved.
+
+The source is public so the game can be hosted, not so it can be reused. You may not copy, modify, redistribute, rehost or sell the game or any part of it, including the art, without written permission. See [LICENSE](LICENSE). The fonts in `fonts/` keep their own open licences.

@@ -1,12 +1,17 @@
 <!doctype html>
+<!-- Capybara with a Gun. Copyright (c) 2026 Steven Petrie (PetrieUK). All rights reserved. Not for reuse or rehosting; see LICENSE. -->
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0e1a10">
 <title>Capybara with a Gun</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap">
+<link rel="preload" href="fonts/lilita-one.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/rubik.woff2" as="font" type="font/woff2" crossorigin>
+<style>/* served with the game rather than from Google, so playing sends nothing to a third party */
+@font-face { font-family: 'Lilita One'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/lilita-one.woff2) format('woff2'); }
+@font-face { font-family: 'Rubik'; font-style: normal; font-weight: 300 900; font-display: swap; src: url(fonts/rubik.woff2) format('woff2'); }
+</style>
 <style>
 /* Layout: one full-screen canvas arena; HUD pinned to the top edge, airstrike button bottom-right, menus as centred panels over the field. */
 :root {
@@ -351,7 +356,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '23';
+const GAME_VERSION = '24';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -983,8 +988,14 @@ const SPIT_FROM = { acid: 'spitter acid', laser: 'a laser blast', feather: "Talo
 function bite(a, p, dt) {
   // every touching ant (or boss part) bites on its own timer, so getting surrounded is deadly at any level
   a.biteCd -= dt;
-  if ((a.alt || 0) > 25 || a.under || a.biteCd > 0) return;
-  if ((a.x - p.x) ** 2 + (a.y - p.y) ** 2 < (a.r + p.r - 4) ** 2) { a.biteCd = 0.9; damagePlayer(a.dmg * (1 + G.t / 200), whoBit(a)); }
+  // a boss's body parts share the boss's timer, so brushing a long snake is one bite, not many
+  const b = a.proxy || a;
+  if ((a.alt || 0) > 25 || a.under || a.biteCd > 0 || b.biteCd > 0) return;
+  if ((a.x - p.x) ** 2 + (a.y - p.y) ** 2 < (a.r + p.r - 4) ** 2) {
+    a.biteCd = b.biteCd = 0.9;
+    // bosses already scale with the lap and your health, so a touch never takes more than 35% of your max health
+    damagePlayer(b.boss ? Math.min(a.dmg, p.maxHp * 0.35) : a.dmg * (1 + G.t / 200), whoBit(a));
+  }
 }
 function callStrike() {
   const p = G.p; if (p.strikeCd > 0 || p.strike < p.strikeNeed) return;
@@ -3033,11 +3044,13 @@ function runSummary() {
     `<p><b>Elites</b> ${S.elites} \u00b7 <b>Chests</b> ${G.chestsOpened} \u00b7 <b>Coins earned</b> ${G.coins}</p>` +
     `<h4>Damage dealt</h4>${rows || '<p>None</p>'}<h4>Build</h4><div class="build">${buildChips(p) || '<span class="chip">No upgrades</span>'}</div>`;
 }
-// opens a GitHub issue with the run details filled in; the tester adds what happened
+// opens a GitHub issue (or, on petrieuk.co.uk, an email) with the run details filled in; the tester adds what happened
+const ON_SITE = /(^|\.)petrieuk\.co\.uk$/.test(location.hostname);
 function bugUrl() {
   const lines = ['**What happened?**', '', '', '**What did you expect to happen?**', '', '', '---',
     `Version: ${GAME_VERSION}`, `Device: ${navigator.userAgent}`, `Screen: ${innerWidth}x${innerHeight}${TOUCH ? ', touch' : ''}${pad.gp ? ', controller' : ''}`];
   if (G && G.t > 0) { const p = G.p; lines.push(`Mode: ${MODE_NAME[G.mode]}`, `Run: ${fmt(G.t)}, level ${p.level}, ${G.kills} ants, area ${biomeNow().name}`, `Path: ${p.evo || PATHS[p.weapon].name}`, `Upgrades: ${buildText(p)}`); }
+  if (ON_SITE) return 'mailto:Steven@PetrieUK.co.uk?subject=' + encodeURIComponent('Capybara with a Gun bug') + '&body=' + encodeURIComponent(lines.join('\n').replace(/\*\*/g, ''));
   return 'https://github.com/PetrieUKDS/capy-gunner/issues/new?title=' + encodeURIComponent('Bug: ') + '&body=' + encodeURIComponent(lines.join('\n'));
 }
 
@@ -3045,7 +3058,7 @@ function bugUrl() {
 let settingsFrom = 'menu';
 function openSettings(from) {
   settingsFrom = from; $(from === 'paused' ? 'paused' : 'menu').hidden = true; $('settings').hidden = false; buildSettings();
-  $('verTxt').textContent = 'Version ' + GAME_VERSION; setTimeout(() => $('setDone').focus({ preventScroll: true }), 50);
+  $('verTxt').textContent = 'Version ' + GAME_VERSION + ' · © 2026 PetrieUK. All rights reserved.'; setTimeout(() => $('setDone').focus({ preventScroll: true }), 50);
 }
 function closeSettings() { $('settings').hidden = true; $(settingsFrom === 'paused' ? 'paused' : 'menu').hidden = false; }
 function buildSettings(keep) {
@@ -3093,7 +3106,7 @@ $('shopBtn').onclick = () => openShop('menu'); $('overShop').onclick = () => ope
 
 /* ---------- install as an app ---------- */
 // on the hosted site (not inside claude.ai) the game can be added to a home screen and played offline
-if ('serviceWorker' in navigator && location.hostname.endsWith('github.io')) {
+if ('serviceWorker' in navigator && (location.hostname.endsWith('github.io') || ON_SITE)) {
   for (const [rel, href] of [['manifest', 'manifest.webmanifest'], ['apple-touch-icon', 'icons/apple-touch-icon.png']]) { const l = document.createElement('link'); l.rel = rel; l.href = href; document.head.appendChild(l); }
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }

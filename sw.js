@@ -1,9 +1,9 @@
 // Offline support: always try the network first so new versions show up straight away,
 // and fall back to the last copy we saved when there's no connection.
-const CACHE = 'capy-v1';
+const CACHE = 'capy-v2';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png'])));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'fonts/lilita-one.woff2', 'fonts/rubik.woff2'])));
   self.skipWaiting();
 });
 
@@ -14,13 +14,6 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== 'GET') return;
-  if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) { // fonts never change: cache first
-    e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
-      if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-      return res;
-    })));
-    return;
-  }
   if (url.origin !== location.origin) return;
   e.respondWith(fetch(req).then(res => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
