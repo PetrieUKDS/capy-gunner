@@ -374,7 +374,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '26';
+const GAME_VERSION = '27';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -848,6 +848,9 @@ function near(x, y, rad, fn) {
 const turnTo = (cur, want, k) => { let d = want - cur; d = Math.atan2(Math.sin(d), Math.cos(d)); return cur + d * Math.min(1, k); };
 
 /* ---------- spawning ---------- */
+// seeds needed for the next level: steep enough that a build isn't maxed out before the first lap ends
+const xpNeed = lv => Math.floor(5 + lv * 3.5 + Math.pow(lv, XP_POW));
+const XP_POW = 2.1;
 function spawnAnt(type, x, y) {
   const T = TYPES[type], p = G.p;
   if (x === undefined) {
@@ -965,6 +968,8 @@ function killAnt(a, src) {
   if (a.boss) {
     // the loot drops at the end of the death animation (see updateDeath)
     G.boss = null; G.bossKills++; startDeath(a);
+    // the next boss is never sooner than 60% of the usual gap after this one dies, however long the fight took
+    G.nextBoss = Math.max(G.nextBoss, G.t + G.D.bossGap * 0.6);
     G.stats.bosses.push({ name: BOSSES[a.kind].name, secs: G.t - (a.spawnT || G.t) });
     if (G.bossClean) award('flawless');
     G.flash = 0.6; G.flashCol = '255,255,255'; buzz([60, 40, 140]);
@@ -1918,7 +1923,7 @@ function update(dt) {
   if (G.gems.length > 400) { const extra = G.gems.splice(0, G.gems.length - 400); G.gems[0].v += extra.reduce((s, g) => s + g.v, 0); }
   G.cam.x = p.x; G.cam.y = p.y;
 
-  if (p.xp >= p.next && state === 'play') { p.xp -= p.next; p.level++; p.next = Math.floor(5 + p.level * 3.2 + Math.pow(p.level, 1.65)); openLevelUp(); }
+  if (p.xp >= p.next && state === 'play') { p.xp -= p.next; p.level++; p.next = xpNeed(p.level); openLevelUp(); }
 }
 
 /* ---------- drawing ---------- */
