@@ -130,6 +130,7 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
 .pick strong { display: block; font: 20px var(--display); }
 .pick small { color: var(--muted); font-size: 13px; }
 .pick kbd { font: 800 11px var(--body); color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; }
+.pick .ico.sup { background: #12324a; color: #8fd8ff; font-size: 22px; }
 .pick .ico.gen { background: #1d3a24; color: var(--acid); font-size: 22px; }
 .picks.paths { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .pick.path { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
@@ -224,6 +225,7 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
 .dmgrow b { text-align: right; font-variant-numeric: tabular-nums; }
 .build { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0; }
 .chip { font-size: 12px; background: rgba(255,154,31,.12); border: 1px solid rgba(255,154,31,.35); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.chip.sup { background: rgba(120,200,255,.1); border-color: rgba(120,200,255,.4); }
 .chip.gen { background: rgba(166,240,60,.1); border-color: rgba(166,240,60,.35); }
 .buildview { text-align: left; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
 .buildview h4:first-child { margin-top: 2px; font-size: 13px; color: var(--ink); letter-spacing: .04em; }
@@ -374,7 +376,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '27';
+const GAME_VERSION = '28';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -718,6 +720,55 @@ const EVOS = {
   pyro:      { key: 'fuel',    gen: 'orbit',  name: "Dragon's Breath", desc: 'A ring of fire spins around you and roasts anything close', apply: w => { w.dragon = 1; } },
   bomb:      { key: 'cluster', gen: 'regen',  name: 'Carpet Bomber',   desc: '+3 grenades per throw, +4 cluster bombs and bigger blasts', apply: w => { w.nades += 3; w.cluster += 4; w.radius *= 1.2; } }
 };
+/* Heavy weapons: a second gun picked on reaching the Scorched Dunes. It fires by itself alongside
+   your main gun, has its own upgrades, and evolves once its key upgrade is maxed. */
+const SUPERS = {
+  tesla: {
+    name: 'Tesla Coil', badge: 'TC', blurb: 'Lightning jumps from ant to ant, zapping a whole chain at once.',
+    base: { dmg: 22, rate: 1, chain: 4, range: 260, stun: 0, bolts: 1 },
+    upg: [
+      { id: 'volt',  name: 'High Voltage', desc: '+25% zap damage',                 max: 6, apply: w => w.dmg *= 1.25 },
+      { id: 'arc',   name: 'Long Arc',     desc: 'Lightning jumps to 2 more ants',  max: 4, apply: w => w.chain += 2 },
+      { id: 'cap',   name: 'Capacitor',    desc: '+18% zap rate',                   max: 5, apply: w => w.rate *= 1.18 },
+      { id: 'reach', name: 'Coil Reach',   desc: '+20% reach',                      max: 3, apply: w => w.range *= 1.2 },
+      { id: 'stun',  name: 'Stun Shock',   desc: 'Zapped ants freeze for a moment', max: 3, apply: w => w.stun += 0.25 }
+    ],
+    evo: { key: 'arc', name: 'Storm Caller', desc: 'Three bolts at once, each jumping twice as far, and every zap stuns', apply: w => { w.bolts = 3; w.chain *= 2; w.stun = Math.max(w.stun, 0.6); } } },
+  missiles: {
+    name: 'Missile Pod', badge: 'MP', blurb: 'Homing rockets that hunt down the toughest ants and blow them up.',
+    base: { dmg: 36, rate: 0.7, count: 2, radius: 60, cluster: 0 },
+    upg: [
+      { id: 'war',  name: 'Warheads',    desc: '+25% rocket damage',  max: 6, apply: w => w.dmg *= 1.25 },
+      { id: 'tube', name: 'Extra Tubes', desc: '+1 rocket per volley', max: 4, apply: w => w.count++ },
+      { id: 'auto', name: 'Autoloader',  desc: '+18% fire rate',       max: 5, apply: w => w.rate *= 1.18 },
+      { id: 'bang', name: 'Big Bang',    desc: '+18% blast size',      max: 3, apply: w => w.radius *= 1.18 }
+    ],
+    evo: { key: 'tube', name: 'Doomsday Barrage', desc: '+4 rockets a volley, and every blast scatters three more', apply: w => { w.count += 4; w.cluster = 3; } } },
+  saw: {
+    name: 'Saw Launcher', badge: 'SL', blurb: 'Spinning saw blades that bounce from ant to ant.',
+    base: { dmg: 16, rate: 0.9, count: 1, bounces: 4, size: 11 },
+    upg: [
+      { id: 'teeth',  name: 'Sharper Teeth', desc: '+25% saw damage',          max: 6, apply: w => w.dmg *= 1.25 },
+      { id: 'blade',  name: 'Second Blade',  desc: '+1 saw per throw',         max: 3, apply: w => w.count++ },
+      { id: 'bounce', name: 'Rebound',       desc: 'Saws bounce 2 more times', max: 4, apply: w => w.bounces += 2 },
+      { id: 'reload', name: 'Quick Reload',  desc: '+18% throw rate',          max: 5, apply: w => w.rate *= 1.18 },
+      { id: 'big',    name: 'Big Blades',    desc: '+25% bigger saws',         max: 3, apply: w => w.size *= 1.25 }
+    ],
+    evo: { key: 'bounce', name: 'Buzzsaw Storm', desc: 'Huge saws that bounce 8 more times and cut through everything in their way', apply: w => { w.size *= 1.8; w.bounces += 8; w.storm = 1; } } },
+  frost: {
+    name: 'Frost Cannon', badge: 'FC', blurb: 'A freezing blast around you that slows every ant it touches.',
+    base: { dmg: 24, rate: 0.6, radius: 190, slowT: 2, shatter: 1, freeze: 0 },
+    upg: [
+      { id: 'cold',  name: 'Colder Core',  desc: '+25% blast damage',                    max: 6, apply: w => w.dmg *= 1.25 },
+      { id: 'wide',  name: 'Wider Blast',  desc: '+15% blast size',                      max: 4, apply: w => w.radius *= 1.15 },
+      { id: 'deep',  name: 'Deep Freeze',  desc: 'Ants stay slowed 1 second longer',     max: 3, apply: w => w.slowT += 1 },
+      { id: 'rapid', name: 'Rapid Chill',  desc: '+18% blast rate',                      max: 5, apply: w => w.rate *= 1.18 },
+      { id: 'shat',  name: 'Shatter',      desc: 'Slowed ants take +40% from the blast', max: 3, apply: w => w.shatter += 0.4 }
+    ],
+    evo: { key: 'wide', name: 'Absolute Zero', desc: 'Blasts freeze ants solid, and frozen ants take triple damage', apply: w => { w.freeze = 1.5; w.shatter = Math.max(w.shatter, 3); } } }
+};
+const SUPER_ORDER = ['tesla', 'missiles', 'saw', 'frost'];
+let HEAVY_K = 0.4;
 const GENERAL = [
   { id: 'speed',  ico: 'S', name: 'Zoomies',         desc: '+12% move speed',                          max: 5, apply: p => p.speed *= 1.12 },
   { id: 'hp',     ico: 'H', name: 'Thick Fur',       desc: '+25 max health and heal 25',               max: 6, apply: p => { p.maxHp += 25; p.hp = Math.min(p.maxHp, p.hp + 25); } },
@@ -818,12 +869,12 @@ let state = 'menu', G = null;
 function newGame() {
   G = {
     t: 0, kills: 0, bossKills: 0, shake: 0, spawnAcc: 0, nextBoss: 120, mode: 'normal', D: rulesFor('normal'), hitStop: 0, hsCd: 0, flash: 0, flashCol: '255,255,255', toast: null,
-    nextElite: 45, nextPickup: 25, lap: 0, bioK: 1, coins: 0, droneA: 0, droneCd: 0, rangCd: 0, drone: null, rangs: [],
+    nextElite: 45, nextPickup: 25, lap: 0, bioK: 1, coins: 0, droneA: 0, droneCd: 0, rangCd: 0, drone: null, rangs: [], swCd: 1, saws: [], rockets: [], zaps: [], frosts: [], superDue: false,
     stats: { dmg: {}, bosses: [], elites: 0, killer: 'the swarm' }, nextTunnel: 60, nextSap: 90, nextWave: 150, wave: null, dragonT: 0, chestsOpened: 0, bossClean: true, bossIdx: 0, boss: null, banner: null, intro: null, death: null, cam: { x: 0, y: 0 },
     p: { x: 0, y: 0, r: 17, hp: 100, maxHp: 100, speed: 175, magnet: 85, regen: 0, orbit: 0, orbitDmg: 14,
          xp: 0, level: 1, next: 5, inv: 0, aim: 0, aim2: 0, walk: 0, moving: false, flash: 0, flash2: 0, firing: false, spinT: 0, alt: false, target2: null,
          weapon: 'pistol', w: { ...PATHS.pistol.base }, wlv: {}, tier: 0, cd: 0, burstLeft: 0, burstT: 0, upg: {},
-         strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0 },
+         strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0, sw: null, s: null, swlv: {}, swEvo: null },
     ants: [], bullets: [], spit: [], nades: [], booms: [], gems: [], melons: [], parts: [], texts: [], strikes: [], orbA: 0,
     chests: [], pickups: [], tunnels: [], puddles: [], clouds: []
   };
@@ -942,7 +993,7 @@ function burst(x, y, col, n, spd = 160, size = 3) {
     G.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(0.3, 0.7), max: 0.7, col, size: rand(size * 0.6, size * 1.4) }); }
 }
 // which line of the run summary each kind of damage counts towards
-const STAT_SRC = { burn: 'burn', strike: 'airstrike', orbit: 'orbit', drone: 'drone', boomerang: 'boomerang' };
+const STAT_SRC = { burn: 'burn', strike: 'airstrike', orbit: 'orbit', drone: 'drone', boomerang: 'boomerang', tesla: 'heavy', missile: 'heavy', saw: 'heavy', frost: 'heavy' };
 function hitAnt(a, dmg, src) {
   if (a.proxy) a = a.proxy;
   if (a.dead || a.under) return;
@@ -1127,24 +1178,33 @@ function openLevelUp(src) {
   // sidekicks turn up from level 10, and once you have one only that one is offered
   const gpool = GENERAL.filter(u => (p.upg[u.id] || 0) < u.max && (!u.side || (p.level >= 10 && (!p.side || p.side === u.id))));
   const take = arr => arr.length ? arr.splice(Math.floor(Math.random() * arr.length), 1)[0] : null;
-  const choices = [take(wpool), take(wpool), take(gpool)].filter(Boolean);
+  const S = p.sw && SUPERS[p.sw];
+  const spool = S ? S.upg.filter(u => (p.swlv[u.id] || 0) < u.max).map(u => ({ ...u, sup: true })) : [];
+  const swEvoReady = S && !p.swEvo && (p.swlv[S.evo.key] || 0) >= S.upg.find(u => u.id === S.evo.key).max;
+  const choices = (spool.length ? [take(wpool), take(spool), take(gpool)] : [take(wpool), take(wpool), take(gpool)]).filter(Boolean);
+  while (choices.length < 3 && spool.length) choices.push(take(spool));
   while (choices.length < 3 && (wpool.length || gpool.length)) choices.push(take(wpool.length ? wpool : gpool));
-  if (!choices.length && !evoReady) { // everything is maxed: heal to full on the spot rather than pausing for a one-option menu
+  if (!choices.length && !evoReady && !swEvoReady) { // everything is maxed: heal to full on the spot rather than pausing for a one-option menu
     $('levelup').hidden = true; state = 'play'; p.hp = p.maxHp; sfx.eat();
     G.texts.push({ x: p.x, y: p.y - 40, txt: chest ? 'TREASURE: FULL HEAL!' : 'FULL HEAL!', life: 1.4, heal: true }); burst(p.x, p.y, '#7dff7a', 14, 160, 4);
     return;
   }
   if (!choices.length) choices.push({ id: 'heal', ico: '+', name: 'Watermelon Feast', desc: 'Heal to full', max: 99, apply: q => q.hp = q.maxHp });
+  if (swEvoReady) { choices.unshift({ id: 'swevo', name: 'Evolve: ' + S.evo.name, desc: S.evo.desc }); choices.length = Math.min(choices.length, 3); }
   if (evoReady) { choices.unshift({ id: 'evo', name: 'Evolve: ' + evo.name, desc: evo.desc }); choices.length = Math.min(choices.length, 3); }
   choices.forEach((u, i) => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'pick' + (u.id === 'evo' ? ' evo' : ''); b.id = 'pick' + i;
-    const lv = (u.weapon ? p.wlv[u.id] : p.upg[u.id]) || 0;
-    const ico = u.id === 'evo' ? '<span class="ico">\u2605</span>' : u.weapon ? `<span class="ico">${path.badge}</span>` : `<span class="ico gen">${u.ico}</span>`;
-    b.innerHTML = `${ico}<span><strong>${u.name}</strong><small>${u.desc}${u.id !== 'heal' && u.id !== 'evo' ? ` \u00b7 level ${lv + 1} of ${u.max}` : ''}</small></span><kbd>${i + 1}</kbd>`;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pick' + (u.id === 'evo' || u.id === 'swevo' ? ' evo' : ''); b.id = 'pick' + i;
+    const lv = (u.weapon ? p.wlv[u.id] : u.sup ? p.swlv[u.id] : p.upg[u.id]) || 0;
+    const ico = u.id === 'evo' || u.id === 'swevo' ? '<span class="ico">\u2605</span>' : u.weapon ? `<span class="ico">${path.badge}</span>` : u.sup ? `<span class="ico sup">${S.badge}</span>` : `<span class="ico gen">${u.ico}</span>`;
+    b.innerHTML = `${ico}<span><strong>${u.name}</strong><small>${u.desc}${u.id !== 'heal' && u.id !== 'evo' && u.id !== 'swevo' ? ` \u00b7 level ${lv + 1} of ${u.max}` : ''}</small></span><kbd>${i + 1}</kbd>`;
     b.onclick = () => {
       if (u.id === 'evo') {
         evo.apply(p.w); p.evo = evo.name; p.tier = 3; G.banner = { txt: evo.name.toUpperCase() + '!', life: 2.6 };
         G.flash = 0.5; G.flashCol = '255,225,120'; award('evolve');
+      } else if (u.id === 'swevo') {
+        S.evo.apply(p.s); p.swEvo = S.evo.name; G.banner = { txt: S.evo.name.toUpperCase() + '!', life: 2.6 }; G.flash = 0.5; G.flashCol = '170,225,255';
+      } else if (u.sup) {
+        u.apply(p.s); p.swlv[u.id] = lv + 1;
       } else if (u.weapon) {
         u.apply(p.w); p.wlv[u.id] = lv + 1;
         const total = Object.values(p.wlv).reduce((s, v) => s + v, 0), tier = Math.min(3, Math.floor(total / 3));
@@ -1172,6 +1232,139 @@ function openPathChoice(box) {
   });
   $('levelup').hidden = false;
   setTimeout(() => { const f = $('pick0'); if (f) f.focus({ preventScroll: true }); }, 50);
+}
+
+// the heavy-weapon pick, offered once on arriving in the Scorched Dunes
+function openSuperChoice() {
+  const p = G.p, box = $('picks'); state = 'levelup'; sfx.level(); box.innerHTML = ''; box.className = 'picks';
+  $('luTitle').textContent = 'Heavy weapon unlocked!'; $('luSub').textContent = 'Pick a second gun. It fires by itself alongside your main one. Keys 1 to 4 work too.';
+  $('evoTip').hidden = true;
+  SUPER_ORDER.forEach((id, i) => {
+    const S = SUPERS[id], b = document.createElement('button'); b.type = 'button'; b.className = 'pick'; b.id = 'pick' + i;
+    b.innerHTML = `<span class="ico sup">${S.badge}</span><span><strong>${S.name}</strong><small>${S.blurb}</small></span><kbd>${i + 1}</kbd>`;
+    b.onclick = () => { p.sw = id; p.s = { ...S.base }; G.swCd = 0.5; G.banner = { txt: S.name.toUpperCase() + '!', life: 2.2 }; closeLevelUp(); };
+    box.appendChild(b);
+  });
+  $('levelup').hidden = false;
+  setTimeout(() => { const f = $('pick0'); if (f) f.focus({ preventScroll: true }); }, 50);
+}
+// the heavy weapon fires on its own timer; its damage grows with the run like the sidekicks' does
+function updateSuper(dt) {
+  // damage is scaled from what your main gun has actually been dealing lately, so the heavy weapon
+  // keeps pulling its weight (about 40% of the gun) however strong the build gets
+  const gunNow = (G.stats.dmg.gun || 0) + (G.stats.dmg.burn || 0);
+  if ((G.gunT = (G.gunT || 0) + dt) >= 1) { G.gunRate = (G.gunRate || 0) * 0.85 + (gunNow - (G.gunPrev || 0)) / G.gunT * 0.15; G.gunPrev = gunNow; G.gunT = 0; }
+  const p = G.p, w = p.s, tf = Math.max(1 + G.t / 240, (G.gunRate || 0) * HEAVY_K / 90);
+  for (const z of G.zaps) z.life -= dt;
+  for (const f of G.frosts) f.t += dt;
+  if (w && (G.swCd -= dt) <= 0) {
+    G.swCd = 1 / w.rate;
+    const nearest = (x, y, rad, skip) => { let best = null, bd = rad * rad; near(x, y, rad, a => { if (a.dead || a.under || (a.alt || 0) > 25) return; const t = a.proxy || a; if (skip && skip.has(t)) return; const dd = (a.x - x) ** 2 + (a.y - y) ** 2; if (dd < bd) { bd = dd; best = a; } }); return best; };
+    if (p.sw === 'tesla') {
+      let any = false;
+      for (let k = 0; k < w.bolts; k++) {
+        const hit = new Set(), pts = [{ x: p.x, y: p.y - 10 }]; let cur = nearest(p.x, p.y, w.range, null);
+        if (k > 0 && cur) { const alt = nearest(p.x + rand(-160, 160), p.y + rand(-160, 160), w.range, null); if (alt) cur = alt; }
+        for (let n = 0; cur && n < w.chain; n++) {
+          const t = cur.proxy || cur; hit.add(t); pts.push({ x: cur.x, y: cur.y }); hitAnt(t, w.dmg * tf, 'tesla');
+          if (w.stun && !t.boss && !t.dead) t.frozen = Math.max(t.frozen || 0, w.stun);
+          cur = nearest(cur.x, cur.y, 150 * (w.bolts > 1 ? 1.4 : 1), hit);
+        }
+        if (pts.length > 1) { any = true; G.zaps.push({ pts: jag(pts), life: 0.18 }); }
+      }
+      if (any) tone(rand(1400, 1800), 0.06, 'sawtooth', 0.02, -900);
+    } else if (p.sw === 'missiles') {
+      const cands = []; near(p.x, p.y, 520, a => { if (!a.dead && !a.under && !a.proxy && (a.alt || 0) <= 25) cands.push(a); });
+      cands.sort((a, b) => b.hp - a.hp);
+      if (cands.length) {
+        for (let i = 0; i < w.count; i++) { const t = cands[i % Math.min(cands.length, 6)], a = -Math.PI / 2 + (i - (w.count - 1) / 2) * 0.35;
+          G.rockets.push({ x: p.x, y: p.y - 14, a, spd: 260, t, life: 3.2, dmg: w.dmg * tf, rad: w.radius, cluster: w.cluster }); }
+        tone(220, 0.12, 'sawtooth', 0.025, 120);
+      }
+    } else if (p.sw === 'saw') {
+      const t0 = nearest(p.x, p.y, 420, null);
+      if (t0) for (let i = 0; i < w.count; i++) { const a = Math.atan2(t0.y - p.y, t0.x - p.x) + (i - (w.count - 1) / 2) * 0.4;
+        G.saws.push({ x: p.x, y: p.y, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, r: w.size, left: w.bounces, dmg: w.dmg * tf, hit: new Map(), spin: 0, life: 4, storm: w.storm }); }
+    } else if (p.sw === 'frost') {
+      G.frosts.push({ x: p.x, y: p.y, t: 0, rad: w.radius }); tone(1200, 0.25, 'sine', 0.03, -700);
+      const seen = new Set();
+      near(p.x, p.y, w.radius + 40, a => {
+        if (a.dead) return; const t = a.proxy || a; if (seen.has(t) || (a.x - p.x) ** 2 + (a.y - p.y) ** 2 > (w.radius + a.r) ** 2) return; seen.add(t);
+        const cold = (t.chill > 0 || t.frozen > 0) ? w.shatter : 1; hitAnt(t, w.dmg * tf * cold, 'frost');
+        if (!t.dead) { t.chill = Math.max(t.chill || 0, w.slowT); if (w.freeze && !t.boss) t.frozen = Math.max(t.frozen || 0, w.freeze); }
+      });
+      for (let i = 0; i < 14 && G.parts.length < 520; i++) { const a = rand(0, 6.283), sp = rand(120, 260); G.parts.push({ x: p.x, y: p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.45, max: 0.45, col: '#cfefff', size: rand(2, 4) }); }
+    }
+  }
+  for (const r of G.rockets) {
+    r.life -= dt; r.spd = Math.min(560, r.spd + 700 * dt);
+    if (r.t && !r.t.dead) r.a = turnTo(r.a, Math.atan2(r.t.y - r.y, r.t.x - r.x), dt * 6);
+    r.x += Math.cos(r.a) * r.spd * dt; r.y += Math.sin(r.a) * r.spd * dt;
+    if (G.parts.length < 520) G.parts.push({ x: r.x - Math.cos(r.a) * 8, y: r.y - Math.sin(r.a) * 8, vx: rand(-20, 20), vy: rand(-20, 20), life: 0.3, max: 0.3, col: '#ffb43a', size: 3 });
+    const hitT = r.t && !r.t.dead && (r.t.x - r.x) ** 2 + (r.t.y - r.y) ** 2 < (r.t.r + 8) ** 2;
+    if (hitT || r.life <= 0 || (r.t && r.t.dead && r.life < 2.6)) {
+      r.dead = true; explode(r.x, r.y, r.rad, r.dmg, 'missile');
+      for (let i = 0; i < r.cluster; i++) { const a = rand(0, 6.283), d = rand(40, 80); later(120 + i * 70, () => { if (G && state !== 'menu') explode(r.x + Math.cos(a) * d, r.y + Math.sin(a) * d, r.rad * 0.6, r.dmg * 0.5, 'missile'); }); }
+    }
+  }
+  for (const sw of G.saws) {
+    sw.life -= dt; sw.spin += dt * 24; sw.x += sw.vx * dt; sw.y += sw.vy * dt;
+    for (const [t, cd] of sw.hit) { if (cd - dt <= 0) sw.hit.delete(t); else sw.hit.set(t, cd - dt); }
+    let bounced = false;
+    near(sw.x, sw.y, sw.r + 40, a => {
+      if (a.dead || a.under || (a.alt || 0) > 25) return; const t = a.proxy || a; if (sw.hit.has(t)) return;
+      if ((a.x - sw.x) ** 2 + (a.y - sw.y) ** 2 > (a.r + sw.r) ** 2) return;
+      sw.hit.set(t, 0.5); hitAnt(t, sw.dmg, 'saw');
+      if (!sw.storm && !bounced) { bounced = true; sw.left--; }
+    });
+    if (bounced || (sw.storm && sw.life < 3.95 && Math.random() < dt * 2)) {
+      const skip = new Set(sw.hit.keys()); let tgt = null, bd = 320 * 320;
+      near(sw.x, sw.y, 320, a => { if (a.dead || a.under) return; const t = a.proxy || a; if (skip.has(t)) return; const dd = (a.x - sw.x) ** 2 + (a.y - sw.y) ** 2; if (dd < bd) { bd = dd; tgt = a; } });
+      if (tgt) { const a = Math.atan2(tgt.y - sw.y, tgt.x - sw.x); sw.vx = Math.cos(a) * 560; sw.vy = Math.sin(a) * 560; }
+      if (bounced) tone(rand(700, 900), 0.04, 'square', 0.015, 200);
+    }
+    if (sw.left < 0 || sw.life <= 0) sw.dead = true;
+  }
+  G.zaps = G.zaps.filter(z => z.life > 0); G.frosts = G.frosts.filter(f => f.t < 0.4);
+  G.rockets = G.rockets.filter(r => !r.dead); G.saws = G.saws.filter(s => !s.dead);
+}
+// breaks a chain of points into a jagged lightning line
+function jag(pts) {
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], n = 4;
+    for (let j = 1; j < n; j++) { const f = j / n, nx = -(b.y - a.y), ny = b.x - a.x, l = Math.hypot(nx, ny) || 1, o = rand(-14, 14);
+      out.push({ x: a.x + (b.x - a.x) * f + nx / l * o, y: a.y + (b.y - a.y) * f + ny / l * o }); }
+    out.push(b);
+  }
+  return out;
+}
+function drawSuper() {
+  for (const f of G.frosts) {
+    const k = f.t / 0.4; ctx.strokeStyle = `rgba(170,225,255,${0.8 * (1 - k)})`; ctx.lineWidth = 8 * (1 - k) + 2;
+    ctx.beginPath(); ctx.arc(f.x, f.y, f.rad * (0.3 + 0.7 * Math.sqrt(k)), 0, 6.283); ctx.stroke();
+    ctx.fillStyle = `rgba(200,240,255,${0.15 * (1 - k)})`; ctx.fill();
+  }
+  for (const z of G.zaps) {
+    const a = Math.min(1, z.life / 0.12); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(z.pts[0].x, z.pts[0].y); for (const q of z.pts) ctx.lineTo(q.x, q.y);
+    ctx.strokeStyle = `rgba(110,190,255,${0.5 * a})`; ctx.lineWidth = 8; ctx.stroke();
+    ctx.strokeStyle = `rgba(240,250,255,${a})`; ctx.lineWidth = 2.5; ctx.stroke();
+  }
+  for (const r of G.rockets) {
+    ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.a);
+    ctx.fillStyle = '#d9dee4'; ctx.strokeStyle = '#2b2f36'; ctx.lineWidth = 2; rr(-13, -4.5, 21, 9, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8503f'; ctx.beginPath(); ctx.moveTo(8, -4.5); ctx.lineTo(16, 0); ctx.lineTo(8, 4.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8503f'; ctx.fillRect(-13, -7, 5, 14);
+    ctx.restore();
+  }
+  for (const sw of G.saws) {
+    ctx.save(); ctx.translate(sw.x, sw.y); ctx.rotate(sw.spin); const R = sw.r, n = 10;
+    ctx.beginPath(); for (let i = 0; i < n * 2; i++) { const a = i / (n * 2) * 6.283, r2 = i % 2 ? R : R * 1.28; ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2); } ctx.closePath();
+    ctx.fillStyle = '#c9d1d9'; ctx.fill(); ctx.strokeStyle = '#3a4048'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#5a636e'; ctx.beginPath(); ctx.arc(0, 0, R * 0.35, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
 }
 
 /* ---------- bosses ---------- */
@@ -1522,6 +1715,7 @@ function updateDeath(dt) {
     G.banner = { txt: BOSSES[b.kind].name + ' DEFEATED!', life: 2.8 };
     if (b.kind === 'mecha') { // a full lap of bosses: on to the next area
       G.lap++; G.bioK = 0; const bio = biomeNow();
+      if (!G.p.sw) G.superDue = true; // a second gun to go with the new area
       later(1800, () => { if (G && state !== 'menu') G.toast = { txt: 'ENTERING ' + bio.name.toUpperCase(), sub: bio.sub, life: 4.5, max: 4.5 }; });
     }
   }
@@ -1697,10 +1891,11 @@ function update(dt) {
       if (a.elite === 'speed' && (a.histT -= dt) <= 0) { a.histT = 0.05; a.hist.unshift({ x: a.x, y: a.y, a: a.a, walk: a.walk }); if (a.hist.length > 4) a.hist.pop(); }
     }
     if (a.burnT > 0) { a.burnT -= dt; a.burnAcc += a.burnDps * dt; if (a.burnAcc >= 2) { const d = a.burnAcc; a.burnAcc = 0; hitAnt(a, d, 'burn'); if (a.dead) continue; } }
+    if (a.chill > 0) a.chill -= dt;
     if (a.frozen > 0) { a.frozen -= dt; continue; } // frozen solid: no moving, no biting
     const dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy) || 1;
     if (a.boss) { bossUpdate(a, dt, p, dx, dy, d); bite(a, p, dt); continue; }
-    let tx = dx / d, ty = dy / d, spd = a.spd;
+    let tx = dx / d, ty = dy / d, spd = a.chill > 0 ? a.spd * 0.45 : a.spd;
     if (a.ranged) {
       const keep = a.ranged === 'laser' ? 300 : 270;
       if (d < keep - 30) { tx = -tx; ty = -ty; spd *= 0.6; } else if (d < keep + 30) spd = 0;
@@ -1876,8 +2071,10 @@ function update(dt) {
     if (r.t > 4) r.dead = true;
     near(r.x, r.y, 40, a => { if (a.dead) return; const t = a.proxy || a; if (r.hit.has(t)) return; if ((a.x - r.x) ** 2 + (a.y - r.y) ** 2 < (a.r + 12) ** 2) { r.hit.add(t); hitAnt(t, r.dmg, 'boomerang'); } });
   }
+  updateSuper(dt);
   G.bioK = Math.min(1, G.bioK + dt * 0.5);
   checkTips();
+  if (G.superDue && !G.death && state === 'play') { G.superDue = false; openSuperChoice(); }
 
   // orange orbit
   if (p.orbit) {
@@ -2771,6 +2968,9 @@ function draw() {
   ctx.fillStyle = 'rgba(170,225,255,0.5)'; ctx.beginPath();
   for (const a of vis) if (a.frozen > 0) { ctx.moveTo(a.x + a.r * 1.3, a.y); ctx.arc(a.x, a.y, a.r * 1.3, 0, 6.283); }
   ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = 'rgba(150,215,255,0.28)'; ctx.beginPath(); // slowed by the frost cannon
+  for (const a of vis) if (a.chill > 0 && !(a.frozen > 0) && !a.boss) { ctx.moveTo(a.x + a.r * 1.1, a.y); ctx.arc(a.x, a.y, a.r * 1.1, 0, 6.283); }
+  ctx.fill();
   for (const a of vis) if (a.elite) {
     if (a.shield > 0) {
       const f = a.shield / a.shieldMax;
@@ -2809,6 +3009,7 @@ function draw() {
     for (const sx of [-11, 11]) { const a = G.t * 40 + sx; ctx.beginPath(); ctx.moveTo(sx - Math.cos(a) * 7, -6 - Math.sin(a) * 1.5); ctx.lineTo(sx + Math.cos(a) * 7, -6 + Math.sin(a) * 1.5); ctx.stroke(); }
     ctx.restore();
   }
+  drawSuper();
   for (const b of bosses) if (FLIERS.has(b.kind)) drawBoss(b, k, ox, oy); // fliers draw over everything on the ground
   if (G.death && FLIERS.has(G.death.b.kind)) { drawDeath(k, ox, oy); ctx.setTransform(k, 0, 0, k, ox, oy); }
   if (p.orbit) for (let i = 0; i < p.orbit; i++) { const ang = G.orbA + i * Math.PI * 2 / p.orbit; drawOrange(p.x + Math.cos(ang) * 72, p.y + Math.sin(ang) * 72); }
@@ -2973,7 +3174,7 @@ function hud() {
   const p = G.p;
   $('hpFill').style.width = (p.hp / p.maxHp * 100) + '%'; $('hpTxt').textContent = `HEALTH ${Math.ceil(p.hp)} / ${p.maxHp}`;
   $('xpFill').style.width = (p.xp / p.next * 100) + '%'; $('lvTxt').textContent = `LEVEL ${p.level}`;
-  const wl = (p.evo || PATHS[p.weapon].name).toUpperCase() + (p.tier ? ' ' + '\u2605'.repeat(p.tier) : '');
+  const wl = (p.evo || PATHS[p.weapon].name).toUpperCase() + (p.tier ? ' ' + '\u2605'.repeat(p.tier) : '') + (p.sw ? ' + ' + (p.swEvo || SUPERS[p.sw].name).toUpperCase() : '');
   if ($('wLabel').textContent !== wl) $('wLabel').textContent = wl;
   const bt = [p.rageT > 0 ? `RAGE x2 ${Math.ceil(p.rageT)}s` : '', p.slowed ? 'STUCK IN SAP' : ''].filter(Boolean).join(' \u00b7 ');
   if ($('buffTxt').textContent !== bt) $('buffTxt').textContent = bt;
@@ -3037,12 +3238,14 @@ const fmtNum = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.roun
 function buildChips(p) {
   const path = PATHS[p.weapon], out = [];
   for (const u of path.upg || []) if (p.wlv[u.id]) out.push(`<span class="chip">${u.name} ${p.wlv[u.id]}/${u.max}</span>`);
+  if (p.sw) for (const u of SUPERS[p.sw].upg) if (p.swlv[u.id]) out.push(`<span class="chip sup">${u.name} ${p.swlv[u.id]}/${u.max}</span>`);
   for (const u of GENERAL) if (p.upg[u.id]) out.push(`<span class="chip gen">${u.name} ${p.upg[u.id]}/${u.max}</span>`);
   return out.join('');
 }
 function buildText(p) {
   const path = PATHS[p.weapon], out = [];
   for (const u of path.upg || []) if (p.wlv[u.id]) out.push(`${u.name} ${p.wlv[u.id]}`);
+  if (p.sw) { out.push(p.swEvo || SUPERS[p.sw].name); for (const u of SUPERS[p.sw].upg) if (p.swlv[u.id]) out.push(`${u.name} ${p.swlv[u.id]}`); }
   for (const u of GENERAL) if (p.upg[u.id]) out.push(`${u.name} ${p.upg[u.id]}`);
   return out.join(', ') || 'none';
 }
@@ -3059,7 +3262,7 @@ function buildView() {
 }
 function runSummary() {
   const p = G.p, S = G.stats, tot = Object.values(S.dmg).reduce((a, b) => a + b, 0) || 1;
-  const lab = { gun: p.evo || PATHS[p.weapon].name, burn: 'Burning', airstrike: 'Airstrikes', orbit: 'Orange orbit', drone: 'Drone buddy', boomerang: 'Boomerang' };
+  const lab = { gun: p.evo || PATHS[p.weapon].name, burn: 'Burning', airstrike: 'Airstrikes', orbit: 'Orange orbit', drone: 'Drone buddy', boomerang: 'Boomerang', heavy: p.sw ? (p.swEvo || SUPERS[p.sw].name) : 'Heavy weapon' };
   const rows = Object.entries(S.dmg).sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([k, v]) => `<div class="dmgrow"><span>${lab[k] || k}</span><i style="--w:${(v / tot * 100).toFixed(1)}%"></i><b>${fmtNum(v)}</b></div>`).join('');
   const bosses = S.bosses.length ? S.bosses.map(b => `${b.name} (${fmt(b.secs)})`).join(', ') : 'none yet';
