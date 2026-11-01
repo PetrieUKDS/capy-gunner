@@ -23,14 +23,15 @@ python -m http.server 8000
 ## What's in it
 
 - **Six weapon paths**, chosen at your first level-up: Gunner, Pistolier, Shotgunner, Sniper, Pyro and Bombardier, each with its own upgrades and an evolution (max one upgrade and take its matching general upgrade).
-- **Eleven bosses** with intros and death animations. The Queen opens every lap and ANT-1000 closes it; in between, the Meadow has Big Chompy, Talon and Slithers, the Scorched Dunes have Scorch (scorpion), Grumble (sandworm) and Rollo (armadillo), and the Midnight Swamp has the Bog King (toad), Mama Skeeter (mosquito) and King Fungus. Their health scales with your build and they enrage at half health.
+- **Fifteen bosses** with intros and death animations, and no repeats across the first three areas. The Meadow opens with the Queen, then Big Chompy, Talon and Slithers, and closes with ANT-1000. The Scorched Dunes open with the Pharaoh, then Scorch (scorpion), Grumble (sandworm) and Rollo (armadillo), and close with the Iron Sphinx. The Midnight Swamp opens with Mother Leech, then the Bog King (toad), Mama Skeeter (mosquito) and King Fungus, and closes with Octo-Tron. Their health scales with your build and they enrage at half health.
+- **The Gauntlet** after the Swamp: an endless run of laps that mixes every area's creatures, with a random opener, three bosses from anywhere and a random closer, all enraged from the start.
 - **Elite ants** (splitter, shielded, speedy) that drop treasure chests with a free upgrade.
 - **Map power-ups** (seed magnet, freeze bomb, rage chilli) and **hazards** (ant tunnels, sticky sap, swarm waves).
 - **Easy, Normal and Nightmare** difficulty (Nightmare unlocks after a 10-minute run), plus a **daily challenge** with a fixed path and twist each day.
 - **Wardrobe**: capybara skins with stat bonuses and hats, some unlocked by progress and achievements.
 - **Heavy weapons** on reaching the Dunes: a second gun that fires alongside your first (Tesla Coil, Missile Pod, Saw Launcher or Frost Cannon), with its own upgrades and evolution.
 - **Sidekicks** from level 10: a drone buddy or a boomerang, levelled up separately from your gun.
-- **New areas** after each lap of all five bosses: Scorched Dunes (sand, cacti, sandstone) and the night-time Midnight Swamp (moss, pools, glowing mushrooms), with tougher, faster swarms.
+- **New areas** after each lap of all five bosses: Scorched Dunes (sand, cacti, sandstone) and the night-time Midnight Swamp (moss, pools, glowing mushrooms), with tougher, faster swarms. Each area swaps the ants for its own creatures (scarabs, scorpions, cobras and robo-wasps in the Dunes; leeches, frogs, snapping turtles and robo-crocs in the Swamp), which keep the same roles as the ants they replace.
 - **Shop**: coins earned every run buy permanent upgrades (health, damage, speed, pickup range, XP, airstrike charge).
 - **Run summary** after each death (what killed you, boss times, damage by source, your build) and a build view on the pause screen.
 - **Settings** for music and sound volume, screen shake, flashes, damage numbers and a low-graphics mode.
