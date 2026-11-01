@@ -374,7 +374,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '25';
+const GAME_VERSION = '26';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -3151,7 +3151,9 @@ $('resumeBtn').onclick = () => pause(false);
 $('quitBtn').onclick = toMenu;
 $('pauseBtn').onclick = () => pause(true);
 $('muteBtn').onclick = toggleMute; $('camBtn').onclick = toggleCam;
-$('strikeBtn').onclick = () => { if (state === 'play') callStrike(); };
+// fire on touch-down, not click: phones don't send a click for a second finger while the first is still steering
+$('strikeBtn').addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'play') callStrike(); });
+$('strikeBtn').onclick = e => { if (e.detail === 0 && state === 'play') callStrike(); }; // keyboard Enter/Space on the focused button
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
 
 Object.keys(TYPES).forEach(antSprites); // bake up front so the first swarm doesn't hitch
