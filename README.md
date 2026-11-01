@@ -15,7 +15,7 @@ python -m http.server 8000
 | | Keyboard | Phone | Controller |
 |---|---|---|---|
 | Move | WASD or arrow keys | Drag anywhere, or use the stick bottom-left | Left stick or d-pad |
-| Airstrike | Space | Round button, bottom-right | A, RB or RT |
+| Airstrike | Space | Round button, bottom-right, or tap anywhere with a second finger while steering | A, RB or RT |
 | Pause | P or Esc | Pause button | Start |
 | Heat-vision cam | C | | |
 | Sound | M | Sound button | |

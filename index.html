@@ -72,6 +72,7 @@ body {
   color: var(--ink); font: 15px/1.05 var(--display); cursor: pointer; text-shadow: 0 1px 2px #000;
   display: grid; place-items: center; padding: 0;
 }
+.strike::before { content: ''; position: absolute; inset: -22px; border-radius: 50%; } /* a bigger target for a thumb in a hurry */
 .strike span { display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; background: rgba(14,26,16,.9); }
 .strike.cool { background: conic-gradient(#7d8a80 var(--fill, 0%), rgba(0,0,0,.55) 0); }
 .strike.ready { border-color: var(--orange); animation: pulse 0.9s ease-in-out infinite; }
@@ -376,7 +377,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '30';
+const GAME_VERSION = '31';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -553,7 +554,9 @@ cv.addEventListener('pointerdown', e => {
   audio();
   if (state === 'intro') { skipIntro(); return; }
   if (state === 'bossdeath') { skipDeath(); return; }
-  if (state !== 'play' || joy.on) return;
+  if (state !== 'play') return;
+  // a second finger anywhere while you steer calls the airstrike, so you never have to stop to aim for the button
+  if (joy.on) { if (e.pointerId !== joy.id) { e.preventDefault(); callStrike(); } return; }
   const hm = joyHome(), home = TOUCH && Math.hypot(e.clientX - hm.x, e.clientY - hm.y) < 100;
   joy.on = true; joy.id = e.pointerId; joy.x = e.clientX; joy.y = e.clientY; joy.ox = home ? hm.x : e.clientX; joy.oy = home ? hm.y : e.clientY;
   try { cv.setPointerCapture(e.pointerId); } catch (err) {}
@@ -1128,7 +1131,7 @@ function checkTips() {
   const p = G.p, T = prog.tips;
   if (!T.move && G.t > 1) tip('move', 'KEEP MOVING!', `Move with ${pad.gp ? 'the left stick' : TOUCH ? 'a finger dragged anywhere' : 'WASD or the arrow keys'}. Your gun fires all by itself.`);
   else if (!T.seeds && G.t > 7 && G.gems.length) tip('seeds', 'GRAB THE SEEDS', 'Green seeds fill your XP bar. Each level-up lets you pick an upgrade.');
-  else if (!T.strike && p.strike >= p.strikeNeed && p.strikeCd <= 0) tip('strike', 'AIRSTRIKE READY!', pad.gp ? 'Press A to call in the chopper.' : TOUCH ? 'Tap the glowing round button to call in the chopper.' : 'Press Space to call in the chopper.');
+  else if (!T.strike && p.strike >= p.strikeNeed && p.strikeCd <= 0) tip('strike', 'AIRSTRIKE READY!', pad.gp ? 'Press A to call in the chopper.' : TOUCH ? 'Tap the round button, or tap anywhere with a second finger while you steer.' : 'Press Space to call in the chopper.');
   else if (!T.elite && G.ants.some(a => a.elite)) tip('elite', 'ELITE ANT!', 'Glowing ants are tough, but they drop a treasure chest with a free upgrade.');
   else if (!T.pickup && G.pickups.length) tip('pickup', 'POWER-UP NEARBY', 'Magnets pull in every seed, freeze bombs stop the ants and chillies double your damage.');
   else if (!T.sap && G.puddles.length) tip('sap', 'STICKY SAP', 'Orange puddles slow you right down. Walk around them.');
@@ -3467,6 +3470,9 @@ $('pauseBtn').onclick = () => pause(true);
 $('muteBtn').onclick = toggleMute; $('camBtn').onclick = toggleCam;
 // fire on touch-down, not click: phones don't send a click for a second finger while the first is still steering
 $('strikeBtn').addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'play') callStrike(); });
+// some phone browsers don't send a second finger's pointer events to the button while the first is steering, so
+// listen for the raw touch too (calling it twice is harmless: the first call spends the charge)
+$('strikeBtn').addEventListener('touchstart', e => { e.preventDefault(); if (state === 'play') callStrike(); }, { passive: false });
 $('strikeBtn').onclick = e => { if (e.detail === 0 && state === 'play') callStrike(); }; // keyboard Enter/Space on the focused button
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
 
