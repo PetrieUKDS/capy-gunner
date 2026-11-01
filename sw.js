@@ -1,9 +1,9 @@
 // Offline support: always try the network first so new versions show up straight away,
 // and fall back to the last copy we saved when there's no connection.
-const CACHE = 'capy-v2';
+const CACHE = 'capy-v3';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'fonts/lilita-one.woff2', 'fonts/rubik.woff2'])));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'fonts/lilita-one.woff2', 'fonts/rubik.woff2', 'fonts/caprasimo.woff2'])));
   self.skipWaiting();
 });
 

@@ -4,7 +4,7 @@ A browser survival auto-shooter. Ant monsters pour out of the ground and never s
 
 Play it at https://petrieuk.co.uk/games/capybara-with-a-gun/. On a phone you can add it to your home screen and it works offline.
 
-The whole game is one file, `index.html`, with all its art embedded. `fonts/` holds its two fonts (Lilita One and Rubik, under the SIL Open Font License), and `manifest.webmanifest`, `sw.js` and `icons/` only make the hosted version installable. Open it in a browser to play, or serve the folder:
+The whole game is one file, `index.html`, with all its art embedded. `fonts/` holds its fonts (Lilita One, Rubik and Caprasimo, under the SIL Open Font License), and `manifest.webmanifest`, `sw.js` and `icons/` only make the hosted version installable. Open it in a browser to play, or serve the folder:
 
 ```bash
 python -m http.server 8000
@@ -35,6 +35,7 @@ python -m http.server 8000
 - **Settings** for music and sound volume, screen shake, flashes, damage numbers and a low-graphics mode.
 - First-run tips, and a **Report a bug** button that fills in your run details (as an email on petrieuk.co.uk, or a GitHub issue on the test build).
 - Music, hit-stop, screen shake, phone and controller support.
+- A small **Buy me a coffee** strip at the foot of the home screen (never shown during a run).
 
 Progress, best runs and cosmetics are saved in the browser's local storage.
 
