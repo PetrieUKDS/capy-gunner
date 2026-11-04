@@ -32,6 +32,7 @@ python -m http.server 8000
 - **Rerolls and banishes** on the level-up screen: one of each per run, more from the shop. A reroll deals three new choices; a banish bins an upgrade for the rest of the run.
 - **Share result** on the game-over screen: a few lines with your time, bosses and area plus the link, through the phone's share sheet or copied to the clipboard.
 - **Stats page**: lifetime runs, time played, kills, bosses, bestiary progress, favourite path, furthest area, records and your best run in each mode.
+- **Achievements screen**: every achievement with its hat or skin reward, and a progress bar where there is something to count.
 - **Bestiary**: every creature and boss you've met, with how many you've squished. The ones you haven't met yet are silhouettes.
 - **Wardrobe**: capybara skins with stat bonuses and hats, unlocked by progress and achievements. The late-game ones take real effort: the Mummy and Bog Beast skins for beating the Iron Sphinx and Octo-Tron, Inferno for a 30-minute run, Diamond for 100,000 kills, and the Pharaoh, Samurai, Laurels and Antennae hats for 40 boss kills, beating all 15 bosses, beating a Gauntlet closer and surviving 20 minutes on Nightmare.
 - **Heavy weapons** on reaching the Dunes: a second gun that fires alongside your first (Tesla Coil, Missile Pod, Saw Launcher or Frost Cannon), with its own upgrades and evolution.
@@ -39,7 +40,7 @@ python -m http.server 8000
 - **New areas** after each lap of all five bosses: Scorched Dunes (sand, cacti, sandstone) and the night-time Midnight Swamp (moss, pools, glowing mushrooms), with tougher, faster swarms. Each area swaps the ants for its own creatures (scarabs, scorpions, cobras and robo-wasps in the Dunes; leeches, frogs, snapping turtles and robo-crocs in the Swamp), which keep the same roles as the ants they replace.
 - **Shop**: coins earned every run buy permanent upgrades (health, damage, speed, pickup range, XP, airstrike charge).
 - **Run summary** after each death (what killed you, boss times, damage by source, your build) and a build view on the pause screen.
-- **Settings** for music and sound volume, screen shake, flashes, damage numbers and a low-graphics mode.
+- **Settings** for music and sound volume, screen shake, flashes, damage numbers, high-visibility enemy shots (a white halo, readable whatever your colour vision), a bigger HUD and a low-graphics mode.
 - First-run tips, and a **Report a bug** button that fills in your run details (as an email on petrieuk.co.uk, or a GitHub issue on the test build).
 - Music with its own loop for each area (and a boss loop for each), hit-stop, screen shake, phone and controller support.
 - A small **Buy me a coffee** strip at the foot of the home screen (never shown during a run).
