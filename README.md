@@ -30,6 +30,8 @@ python -m http.server 8000
 - **Map power-ups** (seed magnet, freeze bomb, rage chilli) and **hazards** (ant tunnels, sticky sap, swarm waves).
 - **Easy, Normal and Nightmare** difficulty (Nightmare unlocks after a 10-minute run), a **daily challenge** with a fixed path and twist each day, and a **weekly challenge** that stacks two twists and lets you pick your path.
 - **Rerolls and banishes** on the level-up screen: one of each per run, more from the shop. A reroll deals three new choices; a banish bins an upgrade for the rest of the run.
+- **Share result** on the game-over screen: a few lines with your time, bosses and area plus the link, through the phone's share sheet or copied to the clipboard.
+- **Stats page**: lifetime runs, time played, kills, bosses, bestiary progress, favourite path, furthest area, records and your best run in each mode.
 - **Bestiary**: every creature and boss you've met, with how many you've squished. The ones you haven't met yet are silhouettes.
 - **Wardrobe**: capybara skins with stat bonuses and hats, unlocked by progress and achievements. The late-game ones take real effort: the Mummy and Bog Beast skins for beating the Iron Sphinx and Octo-Tron, Inferno for a 30-minute run, Diamond for 100,000 kills, and the Pharaoh, Samurai, Laurels and Antennae hats for 40 boss kills, beating all 15 bosses, beating a Gauntlet closer and surviving 20 minutes on Nightmare.
 - **Heavy weapons** on reaching the Dunes: a second gun that fires alongside your first (Tesla Coil, Missile Pod, Saw Launcher or Frost Cannon), with its own upgrades and evolution.
