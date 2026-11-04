@@ -121,6 +121,16 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
 .coffee a:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .best { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .picks { display: grid; gap: 10px; }
+.lutools { margin-top: 12px; }
+.lutools .on { border-color: #e8503f; color: #ffb0a6; }
+.picks.banishing .pick:not(.evo) { border-color: #e8503f; background: rgba(232,80,63,.1); }
+.bcard { max-width: 760px; }
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.btile { display: grid; justify-items: center; gap: 2px; padding: 8px 6px; border: 2px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.04); text-align: center; }
+.btile canvas { width: 100%; max-width: 120px; height: auto; aspect-ratio: 4 / 3; }
+.btile b { font: 15px var(--display); line-height: 1.1; }
+.btile small { font-size: 12px; color: var(--muted); }
+.btile.unseen b { color: var(--muted); }
 .pick {
   display: grid; grid-template-columns: 44px minmax(0,1fr) auto; gap: 12px; align-items: center; text-align: left;
   background: rgba(255,255,255,.05); border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px;
@@ -198,6 +208,9 @@ h2 { margin: 0; font: 38px/1 var(--display); text-wrap: balance; }
 .daily { display: grid; gap: 3px; text-align: left; background: rgba(166,240,60,.08); border: 2px solid rgba(166,240,60,.35); border-radius: 12px; padding: 10px 14px; color: var(--ink); font: inherit; cursor: pointer; }
 .daily:hover { border-color: var(--acid); }
 .daily b { font: 19px var(--display); color: var(--acid); }
+.daily.weekly { background: rgba(255,154,31,.08); border-color: rgba(255,154,31,.35); }
+.daily.weekly:hover { border-color: var(--orange); }
+.daily.weekly b { color: var(--orange); }
 .daily span { font-size: 13px; color: var(--muted); line-height: 1.4; }
 .pick.evo { border-color: #ffd23a; background: linear-gradient(90deg, rgba(255,210,58,.24), rgba(255,154,31,.06)); }
 .pick.evo .ico { background: #ffd23a; color: #3a2410; }
@@ -284,7 +297,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
     <p class="lede">The ant monsters are coming out of the ground and they never stop. Your gun fires by itself at the closest ant. Keep moving, grab the green seeds to level up, and call in the chopper when the meter is full. At your first level-up you choose a path: Gunner, Pistolier, Shotgunner, Sniper, Pyro or Bombardier. Every two minutes, something big shows up.</p>
     <div class="keys">
       <div><b>Move</b>WASD or arrow keys. On a phone, drag anywhere.</div>
-      <div><b>Airstrike</b>Space, or tap the big round button when it glows.</div>
+      <div><b>Airstrike</b>Space, or tap the big round button when it glows. On a phone, a second finger anywhere works too.</div>
       <div><b>Gunner cam</b>Press C for heat-vision mode.</div>
       <div><b>Pause</b>P or Esc.</div>
       <div><b>Controller</b>Left stick or d-pad to move, A for the airstrike, Start to pause. Menus work with the stick and A.</div>
@@ -297,7 +310,8 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
     </div>
     <button class="btn" id="playBtn" type="button">Play</button>
     <button class="daily" id="dailyBtn" type="button"><b>Daily challenge</b><span id="dailyTxt"></span></button>
-    <div class="menubtns"><button class="ibtn wbtn" id="wardrobeBtn" type="button">Wardrobe</button><button class="ibtn wbtn" id="shopBtn" type="button">Shop</button><button class="ibtn wbtn" id="settingsBtn" type="button">Settings</button></div>
+    <button class="daily weekly" id="weeklyBtn" type="button"><b>Weekly challenge</b><span id="weeklyTxt"></span></button>
+    <div class="menubtns"><button class="ibtn wbtn" id="wardrobeBtn" type="button">Wardrobe</button><button class="ibtn wbtn" id="shopBtn" type="button">Shop</button><button class="ibtn wbtn" id="bestiaryBtn" type="button">Bestiary</button><button class="ibtn wbtn" id="settingsBtn" type="button">Settings</button></div>
     <div class="best" id="bestMenu"></div>
     <div class="coffee"><img class="av" src="data:image/webp;base64,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" alt="" width="40" height="60"><div class="txt"><b>Enjoying the game?</b><span>It's free, no ads, no catch. If it made you smile, a coffee keeps the next one coming.</span></div><div class="go"><img class="crit" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAVCAYAAABc6S4mAAAAlElEQVR4nGNkIABUYhb8xyd/Z0kCIyEzcBpMyHBS1GFoIsdBDLQyHJ9eJgYaA0ZsLjiivZ8sw2yuOmJEPBM1ggYdIJuFM4iUmleDMSFASB3t4+BFe/x/5PCjRhwgm8FEqaHYALJZcB/QCjAx0BgwogtQ6iOJyoWMdPUB05C3gIVQWL6Axgl62KKL44q7oR9ETLS2AABmr0SOmljt0QAAAABJRU5ErkJggg==" alt="" width="30"><a href="https://buymeacoffee.com/petrieuk" target="_blank" rel="noopener">Buy me a coffee</a></div></div>
   </div>
@@ -326,6 +340,15 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
   </div>
 </div>
 
+<div class="screen" id="bestiary" hidden>
+  <div class="card bcard">
+    <h2>Bestiary</h2>
+    <p class="lede" id="bestSub"></p>
+    <div id="bestList"></div>
+    <button class="btn" id="bestDone" type="button">Done</button>
+  </div>
+</div>
+
 <div class="screen" id="shop" hidden>
   <div class="card">
     <h2>Shop</h2>
@@ -342,6 +365,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
     <p class="lede" id="luSub">Pick one upgrade. Keys 1, 2 or 3 work too.</p>
     <p class="evotip" id="evoTip" hidden></p>
     <div class="picks" id="picks"></div>
+    <div class="menubtns lutools" id="luTools" hidden></div>
   </div>
 </div>
 
@@ -377,7 +401,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '31';
+const GAME_VERSION = '32';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -401,20 +425,23 @@ function hash(x, y) { let h = (x * 374761393 + y * 668265263) | 0; h = Math.imul
 
 /* ---------- storage ---------- */
 // one best run per mode; the daily one only counts for today
-const MODE_NAME = { easy: 'Easy', normal: 'Normal', nightmare: 'Nightmare', daily: 'Daily challenge' };
+const MODE_NAME = { easy: 'Easy', normal: 'Normal', nightmare: 'Nightmare', daily: 'Daily challenge', weekly: 'Weekly challenge' };
 const dayKey = () => { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
+// weeks run Monday to Sunday, local time
+const weekKey = () => { const d = new Date(); return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5 + 3) / 7); };
 const bestKey = m => !m || m === 'normal' ? 'capy-best' : 'capy-best-' + m;
 function loadBest(m) {
-  try { const b = JSON.parse(localStorage.getItem(bestKey(m)) || 'null'); return b && m === 'daily' && b.day !== dayKey() ? null : b; } catch (e) { return null; }
+  try { const b = JSON.parse(localStorage.getItem(bestKey(m)) || 'null'); return b && ((m === 'daily' && b.day !== dayKey()) || (m === 'weekly' && b.week !== weekKey())) ? null : b; } catch (e) { return null; }
 }
 function saveBest(b, m) { try { localStorage.setItem(bestKey(m), JSON.stringify(b)); } catch (e) {} }
 function showBest(m) {
   const line = k => { const b = loadBest(k), n = MODE_NAME[k]; return b ? `${n} best: ${fmt(b.time)} survived, ${b.kills} ants` : `No ${n.toLowerCase()} best yet. Go set one.`; };
-  $('bestMenu').textContent = line(prog.diff); $('bestOver').textContent = line(m || prog.diff);
+  const g = prog.gauntlet ? ` \u00b7 Gauntlet record: ${prog.gauntlet} lap${prog.gauntlet > 1 ? 's' : ''} cleared` : '';
+  $('bestMenu').textContent = line(prog.diff) + g; $('bestOver').textContent = line(m || prog.diff) + g;
 }
 // lifetime progress for unlocking skins, plus the chosen skin and hat (a per-player convenience)
 function loadProg() {
-  const d = { kills: 0, bosses: 0, best: 0, runs: 0, skin: 'classic', hat: 'orange', diff: 'normal', ach: {}, pathWins: {}, beaten: {}, tips: {}, coins: 0, shop: {} };
+  const d = { kills: 0, bosses: 0, best: 0, runs: 0, skin: 'classic', hat: 'orange', diff: 'normal', ach: {}, pathWins: {}, beaten: {}, seen: {}, gauntlet: 0, tips: {}, coins: 0, shop: {} };
   try { Object.assign(d, JSON.parse(localStorage.getItem('capy-prog') || '{}')); } catch (e) {}
   const b = loadBest(); if (b) d.best = Math.max(d.best, b.time);
   return d;
@@ -481,14 +508,22 @@ function buzz(pat) {
 }
 
 /* ---------- music ---------- */
-/* A tiny step sequencer on the Web Audio clock: kick, bass and an arpeggio in A minor that layers up
-   the longer you survive, switching to a faster, darker loop in E minor while a boss is out. */
-const music = { step: 0, next: 0, out: null, hat: null, boss: false };
+/* A tiny step sequencer on the Web Audio clock: kick, bass and an arpeggio that layers up the longer you
+   survive. Each area has its own loop, and switches to a faster, darker one while a boss is out. */
+const music = { step: 0, next: 0, out: null, hat: null, song: '' };
 const NOTE = n => 440 * Math.pow(2, (n - 69) / 12);
+// each area has its own loop and its own boss loop
 const SONGS = {
-  calm: { bpm: 116, chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]] }, // Am F C G
-  boss: { bpm: 148, chords: [[52, 55, 59], [48, 52, 55], [50, 54, 57], [47, 51, 54]] }  // Em C D B
+  meadow:     { bpm: 116, chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], lead: 'square', bass: 'triangle' },   // Am F C G
+  meadowBoss: { bpm: 148, chords: [[52, 55, 59], [48, 52, 55], [50, 54, 57], [47, 51, 54]], lead: 'square', bass: 'sawtooth' },   // Em C D B
+  dunes:      { bpm: 104, chords: [[50, 53, 57], [51, 55, 58], [50, 53, 57], [48, 51, 55]], lead: 'triangle', bass: 'triangle', snake: true }, // Dm Eb Dm Cm: a desert-y flat second
+  dunesBoss:  { bpm: 150, chords: [[50, 53, 57], [51, 55, 58], [48, 51, 55], [49, 53, 56]], lead: 'square', bass: 'sawtooth' },   // Dm Eb Cm Db
+  swamp:      { bpm: 92,  chords: [[48, 51, 55], [44, 48, 51], [46, 50, 53], [43, 47, 50]], lead: 'sine', bass: 'triangle', slow: true },   // Cm Ab Bb G
+  swampBoss:  { bpm: 138, chords: [[48, 51, 55], [44, 48, 51], [43, 47, 50], [47, 50, 54]], lead: 'sawtooth', bass: 'sawtooth' }, // Cm Ab G B
+  gauntlet:   { bpm: 132, chords: [[52, 55, 59], [48, 52, 55], [45, 48, 52], [47, 51, 54]], lead: 'sawtooth', bass: 'square' },   // Em C Am B
+  gauntletBoss: { bpm: 162, chords: [[52, 55, 59], [53, 57, 60], [48, 52, 55], [47, 51, 54]], lead: 'square', bass: 'sawtooth' }  // Em F C B
 };
+const songKey = boss => { const b = biomeNow(), a = b.gauntlet ? 'gauntlet' : b.art === 'dunes' ? 'dunes' : b.art === 'swamp' ? 'swamp' : 'meadow'; return boss ? a + 'Boss' : a; };
 function mNote(f, t, dur, type, vol) {
   const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(music.out); o.start(t); o.stop(t + dur + 0.02);
@@ -501,13 +536,19 @@ function mHat(t, vol) {
   const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
   s.buffer = music.hat; f.type = 'highpass'; f.frequency.value = 6500; g.gain.value = vol; s.connect(f).connect(g).connect(music.out); s.start(t);
 }
-function musicStep(i, t, boss, lvl, spb) {
-  const S = boss ? SONGS.boss : SONGS.calm, ch = S.chords[Math.floor(i / 16) % 4], b = i % 16;
-  if (b % 4 === 0) mKick(t, 0.55);
+function musicStep(i, t, S, boss, lvl, spb) {
+  const ch = S.chords[Math.floor(i / 16) % 4], b = i % 16;
+  if (b % 4 === 0 && !(S.slow && b === 8)) mKick(t, 0.55);
   if (boss && b % 8 === 6) mKick(t, 0.35);
-  if (b % 2 === 0) mNote(NOTE(ch[0] - 12 + (b % 8 === 6 ? 12 : 0)), t, spb * 1.8, boss ? 'sawtooth' : 'triangle', boss ? 0.08 : 0.16);
-  if ((lvl >= 1 || boss) && b % 4 === 2) mHat(t, 0.14);
-  if ((lvl >= 2 || boss) && b % 2 === 1) mNote(NOTE(ch[[0, 1, 2, 1, 0, 2, 1, 2][(b >> 1) % 8]] + 12), t, spb * 1.5, 'square', 0.03);
+  if (b % 2 === 0) mNote(NOTE(ch[0] - 12 + (b % 8 === 6 ? 12 : 0)), t, spb * (S.slow ? 3 : 1.8), S.bass, S.bass === 'triangle' ? 0.16 : 0.08);
+  if ((lvl >= 1 || boss) && b % 4 === 2) mHat(t, S.slow ? 0.08 : 0.14);
+  const lv = { square: 0.03, sawtooth: 0.022, triangle: 0.07, sine: 0.08 }[S.lead];
+  if ((lvl >= 2 || boss) && b % 2 === 1) {
+    // the desert loop winds up and down like a snake charmer; the others arpeggiate
+    const pat = S.snake ? [0, 1, 2, 1, 2, 1, 0, 1] : [0, 1, 2, 1, 0, 2, 1, 2], n = ch[pat[(b >> 1) % 8]] + 12 + (S.snake && b % 8 === 7 ? 1 : 0);
+    mNote(NOTE(n), t, spb * (S.slow ? 2.5 : 1.5), S.lead, lv);
+  }
+  if (S.slow && lvl >= 1 && b === 0) mNote(NOTE(ch[2] + 12), t, spb * 14, 'sine', 0.03); // a slow pad hanging over the swamp
   if (boss && b === 0) mNote(NOTE(ch[0] + 24), t, spb * 7, 'sawtooth', 0.025);
 }
 function musicTick() {
@@ -517,10 +558,10 @@ function musicTick() {
     const n = Math.floor(AC.sampleRate * 0.05); music.hat = AC.createBuffer(1, n, AC.sampleRate);
     const d = music.hat.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
   }
-  const boss = !!(G.boss || G.intro || G.death), spb = 60 / (boss ? SONGS.boss : SONGS.calm).bpm / 4, lvl = G.t > 120 ? 2 : G.t > 45 ? 1 : 0;
-  if (boss !== music.boss) { music.boss = boss; music.step = 0; }
+  const boss = !!(G.boss || G.intro || G.death), key = songKey(boss), S = SONGS[key], spb = 60 / S.bpm / 4, lvl = G.t > 120 ? 2 : G.t > 45 ? 1 : 0;
+  if (key !== music.song) { music.song = key; music.step = 0; }
   if (music.next < AC.currentTime) music.next = AC.currentTime + 0.05;
-  while (music.next < AC.currentTime + 0.15) { musicStep(music.step, music.next, boss, lvl, spb); music.step = (music.step + 1) % 64; music.next += spb; }
+  while (music.next < AC.currentTime + 0.15) { musicStep(music.step, music.next, S, boss, lvl, spb); music.step = (music.step + 1) % 64; music.next += spb; }
 }
 setInterval(musicTick, 40);
 
@@ -543,7 +584,9 @@ addEventListener('keydown', e => {
     if (k === 'p' || k === 'escape') pause(true);
   } else if (state === 'paused' && (k === 'p' || k === 'escape')) pause(false);
   else if (state === 'levelup' && ['1', '2', '3', '4', '5', '6'].includes(k)) { const b = $('picks').children[+k - 1]; if (b) b.click(); }
+  else if (state === 'levelup' && (k === 'r' || k === 'b')) { const b = $(k === 'r' ? 'rerollBtn' : 'banishBtn'); if (b && !$('luTools').hidden) b.click(); }
   else if (k === 'escape' && !$('wardrobe').hidden) closeWardrobe();
+  else if (k === 'escape' && !$('bestiary').hidden) closeBestiary();
   else if (k === 'escape' && !$('shop').hidden) closeShop();
   if (k === 'c') toggleCam();
   if (k === 'm') toggleMute();
@@ -799,10 +842,12 @@ const DAILY_MODS = [
 ];
 // everyone gets the same path and twist on the same day
 function dailyRules() { const k = dayKey(); return { path: PATH_ORDER[Math.floor(hash(k, 7) * PATH_ORDER.length)], mod: DAILY_MODS[Math.floor(hash(k, 13) * DAILY_MODS.length)] }; }
+// the weekly challenge stacks two of the daily twists, and you pick your own path
+function weeklyRules() { const k = weekKey(), a = Math.floor(hash(k, 31) * DAILY_MODS.length), b = (a + 1 + Math.floor(hash(k, 37) * (DAILY_MODS.length - 1))) % DAILY_MODS.length; return { mods: [DAILY_MODS[a], DAILY_MODS[b]] }; }
 function rulesFor(mode) {
   const D = { hp: 1, spd: 1, dmg: 1, spawn: 1, xp: 1, elite: 1, bossGap: 120, php: 1, pdmg: 1 };
-  const src = mode === 'daily' ? dailyRules().mod : DIFF[mode] || {};
-  for (const k in D) if (src[k] !== undefined) D[k] = k === 'bossGap' ? src[k] : D[k] * src[k];
+  const srcs = mode === 'daily' ? [dailyRules().mod] : mode === 'weekly' ? weeklyRules().mods : [DIFF[mode] || {}];
+  for (const src of srcs) for (const k in D) if (src[k] !== undefined) D[k] = k === 'bossGap' ? Math.min(D[k], src[k]) : D[k] * src[k];
   return D;
 }
 const nightmareOpen = () => prog.best >= 600;
@@ -883,7 +928,7 @@ function newGame() {
          weapon: 'pistol', w: { ...PATHS.pistol.base }, wlv: {}, tier: 0, cd: 0, burstLeft: 0, burstT: 0, upg: {},
          strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0, sw: null, s: null, swlv: {}, swEvo: null },
     ants: [], bullets: [], spit: [], nades: [], booms: [], gems: [], melons: [], parts: [], texts: [], strikes: [], orbA: 0,
-    chests: [], pickups: [], tunnels: [], puddles: [], clouds: []
+    chests: [], pickups: [], tunnels: [], puddles: [], clouds: [], rerolls: 0, banishes: 0, banished: 0, banned: [], banishing: false
   };
 }
 
@@ -1018,6 +1063,7 @@ function hitAnt(a, dmg, src) {
 }
 function killAnt(a, src) {
   a.dead = true; G.kills++; sfx.squish();
+  if (state !== 'menu' && !a.proxy) { const k = a.boss ? 'boss:' + a.kind : a.type; prog.seen[k] = (prog.seen[k] || 0) + 1; } // for the bestiary (saved with the run)
   if (a.segs) a.segs.forEach(s => { s.dead = true; }); // they pop one by one in the death animation
   burst(a.x, a.y, a.col, a.boss ? 60 : 8, a.boss ? 320 : 150, a.boss ? 6 : 3);
   burst(a.x, a.y, a.metal ? '#cfd6dd' : '#24170e', a.boss ? 30 : 3, 90, 2);
@@ -1201,12 +1247,12 @@ function openLevelUp(src) {
   const evoReady = evo && !p.evo && (p.wlv[evo.key] || 0) >= key.max && (p.upg[evo.gen] || 0) >= 1;
   const tip = $('evoTip'); tip.hidden = !evo || !!p.evo || evoReady;
   if (!tip.hidden) tip.textContent = `Evolution: max out ${key.name} (${p.wlv[evo.key] || 0} of ${key.max}) and take ${gen.name}${p.upg[evo.gen] ? ' (done)' : ''} to unlock ${evo.name}.`;
-  const wpool = path.upg.filter(u => (p.wlv[u.id] || 0) < u.max).map(u => ({ ...u, weapon: true }));
+  const wpool = path.upg.filter(u => (p.wlv[u.id] || 0) < u.max && !G.banned.includes('w:' + u.id)).map(u => ({ ...u, weapon: true }));
   // sidekicks turn up from level 10, and once you have one only that one is offered
-  const gpool = GENERAL.filter(u => (p.upg[u.id] || 0) < u.max && (!u.side || (p.level >= 10 && (!p.side || p.side === u.id))));
+  const gpool = GENERAL.filter(u => (p.upg[u.id] || 0) < u.max && !G.banned.includes('g:' + u.id) && (!u.side || (p.level >= 10 && (!p.side || p.side === u.id))));
   const take = arr => arr.length ? arr.splice(Math.floor(Math.random() * arr.length), 1)[0] : null;
   const S = p.sw && SUPERS[p.sw];
-  const spool = S ? S.upg.filter(u => (p.swlv[u.id] || 0) < u.max).map(u => ({ ...u, sup: true })) : [];
+  const spool = S ? S.upg.filter(u => (p.swlv[u.id] || 0) < u.max && !G.banned.includes('s:' + u.id)).map(u => ({ ...u, sup: true })) : [];
   const swEvoReady = S && !p.swEvo && (p.swlv[S.evo.key] || 0) >= S.upg.find(u => u.id === S.evo.key).max;
   const choices = (spool.length ? [take(wpool), take(spool), take(gpool)] : [take(wpool), take(wpool), take(gpool)]).filter(Boolean);
   while (choices.length < 3 && spool.length) choices.push(take(spool));
@@ -1225,6 +1271,9 @@ function openLevelUp(src) {
     const ico = u.id === 'evo' || u.id === 'swevo' ? '<span class="ico">\u2605</span>' : u.weapon ? `<span class="ico">${path.badge}</span>` : u.sup ? `<span class="ico sup">${S.badge}</span>` : `<span class="ico gen">${u.ico}</span>`;
     b.innerHTML = `${ico}<span><strong>${u.name}</strong><small>${u.desc}${u.id !== 'heal' && u.id !== 'evo' && u.id !== 'swevo' ? ` \u00b7 level ${lv + 1} of ${u.max}` : ''}</small></span><kbd>${i + 1}</kbd>`;
     b.onclick = () => {
+      if (G.banishing && !['evo', 'swevo', 'heal'].includes(u.id)) { // binned: never offered again this run
+        G.banned.push((u.weapon ? 'w:' : u.sup ? 's:' : 'g:') + u.id); G.banishes--; G.banishing = false; sfx.hurt(); openLevelUp(src); return;
+      }
       if (u.id === 'evo') {
         evo.apply(p.w); p.evo = evo.name; p.tier = 3; G.banner = { txt: evo.name.toUpperCase() + '!', life: 2.6 };
         G.flash = 0.5; G.flashCol = '255,225,120'; award('evolve');
@@ -1242,11 +1291,19 @@ function openLevelUp(src) {
     };
     box.appendChild(b);
   });
+  // rerolls deal three new choices; a banish bins the next one you tap for the rest of the run
+  const tools = $('luTools'); tools.innerHTML = ''; tools.hidden = !(G.rerolls || G.banishes); box.classList.toggle('banishing', !!G.banishing);
+  if (G.rerolls) { const r = document.createElement('button'); r.type = 'button'; r.className = 'ibtn wbtn'; r.id = 'rerollBtn'; r.textContent = `Reroll (${G.rerolls})`; r.onclick = () => { G.rerolls--; G.banishing = false; openLevelUp(src); }; tools.appendChild(r); }
+  if (G.banishes) {
+    const r = document.createElement('button'); r.type = 'button'; r.className = 'ibtn wbtn'; r.id = 'banishBtn';
+    const label = () => { r.textContent = G.banishing ? 'Tap one to bin it' : `Banish (${G.banishes})`; r.classList.toggle('on', G.banishing); r.setAttribute('aria-pressed', G.banishing); box.classList.toggle('banishing', G.banishing); };
+    label(); r.onclick = () => { G.banishing = !G.banishing; label(); }; tools.appendChild(r); // same choices: switching modes is not a free reroll
+  }
   $('levelup').hidden = false;
   setTimeout(() => { const f = $('pick0'); if (f) f.focus({ preventScroll: true }); }, 50);
 }
 function openPathChoice(box) {
-  const p = G.p; box.className = 'picks paths';
+  const p = G.p; box.className = 'picks paths'; $('luTools').hidden = true;
   $('luTitle').textContent = 'Choose your path'; $('luSub').textContent = 'This decides your gun for the rest of the run. Keys 1 to 6 work too.';
   $('evoTip').hidden = true;
   PATH_ORDER.forEach((id, i) => {
@@ -1263,7 +1320,7 @@ function openPathChoice(box) {
 
 // the heavy-weapon pick, offered once on arriving in the Scorched Dunes
 function openSuperChoice() {
-  const p = G.p, box = $('picks'); state = 'levelup'; sfx.level(); box.innerHTML = ''; box.className = 'picks';
+  const p = G.p, box = $('picks'); state = 'levelup'; sfx.level(); box.innerHTML = ''; box.className = 'picks'; $('luTools').hidden = true;
   $('luTitle').textContent = 'Heavy weapon unlocked!'; $('luSub').textContent = 'Pick a second gun. It fires by itself alongside your main one. Keys 1 to 4 work too.';
   $('evoTip').hidden = true;
   SUPER_ORDER.forEach((id, i) => {
@@ -1800,7 +1857,11 @@ function updateDeath(dt) {
     if (BOSSES[b.kind].closer) { // a full lap of bosses: on to the next area
       G.lap++; G.bioK = 0; const bio = biomeNow();
       if (!G.p.sw) G.superDue = true; // a second gun to go with the new area
-      later(1800, () => { if (G && state !== 'menu') G.toast = { txt: 'ENTERING ' + bio.name.toUpperCase(), sub: bio.sub, life: 4.5, max: 4.5 }; });
+      const cleared = G.lap - 3; // Gauntlet laps cleared this run
+      const record = cleared > (prog.gauntlet || 0); if (record) { prog.gauntlet = cleared; saveProg(); }
+      later(1800, () => { if (G && state !== 'menu') G.toast = cleared > 0
+        ? { txt: 'GAUNTLET LAP ' + cleared + ' CLEARED', sub: record ? 'A new Gauntlet record!' : 'Your record: ' + prog.gauntlet + (prog.gauntlet > 1 ? ' laps' : ' lap'), life: 4.5, max: 4.5 }
+        : { txt: 'ENTERING ' + bio.name.toUpperCase(), sub: bio.sub, life: 4.5, max: 4.5 }; });
     }
   }
   stepFx(dt);
@@ -2029,6 +2090,10 @@ function update(dt) {
       if (a.dead || a.under) continue; const dd = (a.x - p.x) ** 2 + (a.y - p.y) ** 2;
       if (dd < best) { best2 = best; p.target2 = target; best = dd; target = a; } else if (dd < best2 && (a.proxy || a) !== (target && (target.proxy || target))) { best2 = dd; p.target2 = a; }
     }
+    // in a crowd the boss is hardly ever the nearest thing, so it barely got shot: aim at a boss in range
+    // unless something is close enough to bite
+    const bz = G.boss;
+    if (bz && !bz.dead && !bz.under && target && (target.proxy || target) !== bz && best > 120 * 120 && Math.hypot(bz.x - p.x, bz.y - p.y) - bz.r < w.range) target = bz;
   }
   if (wp === 'gunner' && !target) p.spinT = Math.max(0, p.spinT - dt * 2);
   if (target) {
@@ -3311,11 +3376,13 @@ function start(mode) {
   const sh = lv => prog.shop[lv] || 0;
   p.maxHp += 10 * sh('hp'); p.dmgMul *= 1 + 0.04 * sh('dmg'); p.speed *= 1 + 0.03 * sh('speed'); p.magnet *= 1 + 0.1 * sh('magnet');
   p.xpMul *= 1 + 0.04 * sh('xp'); p.strikeNeed = Math.round(p.strikeNeed * (1 - 0.06 * sh('strike')));
+  G.rerolls = 1 + sh('reroll'); G.banishes = 1 + sh('banish'); // one of each free, more from the shop
   p.speed *= 1 + (bn.speed || 0); p.maxHp = p.hp = Math.round(p.maxHp * (1 + (bn.hp || 0)) * D.php);
   if (mode === 'daily') { // the daily challenge hands you today's path straight away
     const r = dailyRules(); p.weapon = r.path; p.w = { ...PATHS[r.path].base };
     G.banner = { txt: 'DAILY: ' + PATHS[r.path].name.toUpperCase() + ' + ' + r.mod.name.toUpperCase(), life: 3 };
-  } else if (mode !== 'normal') G.banner = { txt: MODE_NAME[mode].toUpperCase() + ' MODE', life: 2 };
+  } else if (mode === 'weekly') G.banner = { txt: 'WEEKLY: ' + weeklyRules().mods.map(m => m.name.toUpperCase()).join(' + '), life: 3 };
+  else if (mode !== 'normal') G.banner = { txt: MODE_NAME[mode].toUpperCase() + ' MODE', life: 2 };
   ['menu', 'over', 'levelup', 'paused', 'bossCard'].forEach(id => $(id).hidden = true);
   $('hud').hidden = false; $('strikeBtn').hidden = false; last = performance.now();
 }
@@ -3326,7 +3393,7 @@ function pause(on) {
 function gameOver() {
   state = 'over';
   const m = G.mode, b = loadBest(m), isBest = !b || G.t > b.time;
-  if (isBest) saveBest({ time: G.t, kills: G.kills, day: dayKey() }, m);
+  if (isBest) saveBest({ time: G.t, kills: G.kills, day: dayKey(), week: weekKey() }, m);
   showBest(m);
   $('overTitle').textContent = isBest ? (m === 'daily' ? 'New daily best!' : `New ${m === 'normal' ? '' : MODE_NAME[m].toLowerCase() + ' '}best run!`) : 'The ants got you';
   $('rTime').textContent = fmt(G.t); $('rKills').textContent = G.kills; $('rLevel').textContent = G.p.level;
@@ -3375,7 +3442,8 @@ function runSummary() {
   const rows = Object.entries(S.dmg).sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([k, v]) => `<div class="dmgrow"><span>${lab[k] || k}</span><i style="--w:${(v / tot * 100).toFixed(1)}%"></i><b>${fmtNum(v)}</b></div>`).join('');
   const bosses = S.bosses.length ? S.bosses.map(b => `${b.name} (${fmt(b.secs)})`).join(', ') : 'none yet';
-  return `<p><b>Killed by</b> ${S.killer}</p><p><b>Area</b> ${biomeNow().name} \u00b7 <b>Bosses beaten</b> ${bosses}</p>` +
+  const gl = G.lap >= 3 ? `<p><b>Gauntlet laps cleared</b> ${G.lap - 3} \u00b7 <b>Record</b> ${prog.gauntlet || 0}</p>` : '';
+  return `<p><b>Killed by</b> ${S.killer}</p><p><b>Area</b> ${biomeNow().name} \u00b7 <b>Bosses beaten</b> ${bosses}</p>` + gl +
     `<p><b>Elites</b> ${S.elites} \u00b7 <b>Chests</b> ${G.chestsOpened} \u00b7 <b>Coins earned</b> ${G.coins}</p>` +
     `<h4>Damage dealt</h4>${rows || '<p>None</p>'}<h4>Build</h4><div class="build">${buildChips(p) || '<span class="chip">No upgrades</span>'}</div>`;
 }
@@ -3411,6 +3479,40 @@ $('setList').onclick = e => {
 };
 $('settingsBtn').onclick = () => openSettings('menu'); $('pauseSettings').onclick = () => openSettings('paused'); $('setDone').onclick = closeSettings;
 
+/* ---------- bestiary ---------- */
+// every creature and boss you've met, with how many you've squished; ones you haven't met are silhouettes
+function bossArt(k) { return k === 'queen' || k === 'mecha' ? ANT_ART[k] : BOSS_ART[k === 'anaconda' ? 'snakehead' : k]; }
+function bestTile(art, name, n, verb = 'squished') {
+  const t = document.createElement('div'); t.className = 'btile' + (n ? '' : ' unseen');
+  t.innerHTML = `<canvas width="120" height="90" aria-hidden="true"></canvas><b>${n ? name : '???'}</b><small>${n ? n.toLocaleString() + ' ' + verb : 'Not met yet'}</small>`;
+  const g = t.querySelector('canvas').getContext('2d');
+  const paint = () => {
+    if (!art || !artOk(art)) return; const k = Math.min(108 / art.w, 78 / art.h), w = art.w * k, h = art.h * k;
+    g.clearRect(0, 0, 120, 90); g.drawImage(art.img, 60 - w / 2, 45 - h / 2, w, h);
+    if (!n) { g.globalCompositeOperation = 'source-in'; g.fillStyle = '#0d1510'; g.fillRect(0, 0, 120, 90); g.globalCompositeOperation = 'source-over'; }
+  };
+  if (art && !artOk(art)) art.img.decode().then(paint).catch(() => {}); else paint();
+  return t;
+}
+function openBestiary() {
+  $('menu').hidden = true; $('bestiary').hidden = false;
+  const name = k => TYPE_NAME[k].replace(/^an? /, ''), cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  const box = $('bestList'); box.innerHTML = ''; let met = 0, all = 0;
+  const section = (title, list) => {
+    const h = document.createElement('h3'); h.className = 'wh'; h.textContent = title; box.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'bgrid'; box.appendChild(grid);
+    for (const [art, nm, n, verb] of list) { all++; if (n) met++; grid.appendChild(bestTile(art, nm, n, verb)); }
+  };
+  const foes = pre => FOE_ROLES.map(r => pre + r).map(k => [ANT_ART[k], cap(name(k)), prog.seen[k] || 0]);
+  section('The Meadow', foes('')); section('Scorched Dunes', foes('d_')); section('Midnight Swamp', foes('s_'));
+  const order = [...new Set([...BOSS_ORDER, ...BIOMES[1].bosses, ...BIOMES[2].bosses])];
+  section('Bosses', order.map(k => [bossArt(k), BOSSES[k].name.toLowerCase().replace(/(^|[ -])\w/g, c => c.toUpperCase()), prog.seen['boss:' + k] || (prog.beaten[k] ? 1 : 0), 'beaten']));
+  $('bestSub').textContent = `${met} of ${all} found. Squish one to add it to the book.`;
+  setTimeout(() => $('bestDone').focus({ preventScroll: true }), 50);
+}
+function closeBestiary() { $('bestiary').hidden = true; $('menu').hidden = false; buildMenu(); }
+$('bestiaryBtn').onclick = openBestiary; $('bestDone').onclick = closeBestiary;
+
 /* ---------- shop ---------- */
 const SHOP = [
   { id: 'hp',     name: 'Tough Hide',     desc: '+10 starting max health',        max: 5, cost: 40 },
@@ -3418,7 +3520,9 @@ const SHOP = [
   { id: 'speed',  name: 'Quick Paws',     desc: '+3% move speed',                 max: 5, cost: 40 },
   { id: 'magnet', name: 'Big Nose',       desc: '+10% seed pickup range',         max: 5, cost: 30 },
   { id: 'xp',     name: 'Study Hard',     desc: '+4% XP from seeds',              max: 5, cost: 50 },
-  { id: 'strike', name: 'Pilot Training', desc: 'Airstrike charges 6% faster',    max: 4, cost: 50 }
+  { id: 'strike', name: 'Pilot Training', desc: 'Airstrike charges 6% faster',    max: 4, cost: 50 },
+  { id: 'reroll', name: 'Lucky Dice',     desc: '+1 reroll of the upgrade choices each run', max: 3, cost: 60, each: true },
+  { id: 'banish', name: 'Bin It',         desc: '+1 banish each run: bin an upgrade so it never turns up again', max: 3, cost: 80, each: true }
 ];
 let shopFrom = 'menu';
 function openShop(from) { shopFrom = from; $('menu').hidden = true; $('over').hidden = true; $('shop').hidden = false; buildShop(); setTimeout(() => $('shopDone').focus({ preventScroll: true }), 50); }
@@ -3427,7 +3531,7 @@ function buildShop(keep) {
   $('shopCoins').textContent = prog.coins.toLocaleString() + ' coins';
   $('shopList').innerHTML = SHOP.map(it => {
     const lv = prog.shop[it.id] || 0, cost = it.cost * (lv + 1), maxed = lv >= it.max;
-    return `<div class="shoprow"><span>${it.name} <span class="pips">${'\u25cf'.repeat(lv)}${'\u25cb'.repeat(it.max - lv)}</span><small>${it.desc} per level</small></span>` +
+    return `<div class="shoprow"><span>${it.name} <span class="pips">${'\u25cf'.repeat(lv)}${'\u25cb'.repeat(it.max - lv)}</span><small>${it.desc}${it.each ? '' : ' per level'}</small></span>` +
       `<button class="sbtn buy" type="button" data-id="${it.id}" ${maxed || prog.coins < cost ? 'disabled' : ''}>${maxed ? 'Maxed' : 'Buy \u00b7 ' + cost}</button></div>`;
   }).join('');
   if (keep) { const b = $('shopList').querySelector(`[data-id="${keep}"]`); (b && !b.disabled ? b : $('shopDone')).focus({ preventScroll: true }); }
@@ -3456,16 +3560,18 @@ function buildMenu() {
   const nb = $('nightBtn'); nb.disabled = !open; nb.querySelector('small').textContent = open ? 'Good luck' : 'Survive 10:00 to unlock';
   const r = dailyRules(), db = loadBest('daily');
   $('dailyTxt').textContent = `Today: ${PATHS[r.path].name} only, plus ${r.mod.name}: ${r.mod.desc.toLowerCase()}. ` + (db ? `Your best today: ${fmt(db.time)}.` : 'Not played yet today.');
+  const wr = weeklyRules().mods, wb = loadBest('weekly');
+  $('weeklyTxt').textContent = `This week, two twists at once: ${wr.map(m => `${m.name} (${m.desc.toLowerCase()})`).join(' and ')}. Any path. ` + (wb ? `Your best this week: ${fmt(wb.time)}.` : 'Not played yet this week.');
   showBest();
 }
 $('modes').onclick = e => { const b = e.target.closest('.mode'); if (!b || b.disabled) return; prog.diff = b.dataset.diff; saveProg(); buildMenu(); };
 buildMenu();
 const toMenu = () => { state = 'menu'; ['paused', 'over', 'hud', 'strikeBtn', 'bossCard'].forEach(id => $(id).hidden = true); $('menu').hidden = false; buildMenu(); demo(); };
-$('playBtn').onclick = () => start(prog.diff); $('againBtn').onclick = () => start(G.mode); $('dailyBtn').onclick = () => start('daily');
+$('playBtn').onclick = () => start(prog.diff); $('againBtn').onclick = () => start(G.mode); $('dailyBtn').onclick = () => start('daily'); $('weeklyBtn').onclick = () => start('weekly');
 $('overMenu').onclick = toMenu;
 $('wardrobeBtn').onclick = openWardrobe; $('overWardrobe').onclick = openWardrobe; $('wDone').onclick = closeWardrobe;
 $('resumeBtn').onclick = () => pause(false);
-$('quitBtn').onclick = toMenu;
+$('quitBtn').onclick = () => { saveProg(); toMenu(); };
 $('pauseBtn').onclick = () => pause(true);
 $('muteBtn').onclick = toggleMute; $('camBtn').onclick = toggleCam;
 // fire on touch-down, not click: phones don't send a click for a second finger while the first is still steering

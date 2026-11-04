@@ -16,6 +16,7 @@ python -m http.server 8000
 |---|---|---|---|
 | Move | WASD or arrow keys | Drag anywhere, or use the stick bottom-left | Left stick or d-pad |
 | Airstrike | Space | Round button, bottom-right, or tap anywhere with a second finger while steering | A, RB or RT |
+| Reroll / banish upgrades | R / B on the level-up screen | Buttons under the choices | |
 | Pause | P or Esc | Pause button | Start |
 | Heat-vision cam | C | | |
 | Sound | M | Sound button | |
@@ -23,11 +24,13 @@ python -m http.server 8000
 ## What's in it
 
 - **Six weapon paths**, chosen at your first level-up: Gunner, Pistolier, Shotgunner, Sniper, Pyro and Bombardier, each with its own upgrades and an evolution (max one upgrade and take its matching general upgrade).
-- **Fifteen bosses** with intros and death animations, and no repeats across the first three areas. The Meadow opens with the Queen, then Big Chompy, Talon and Slithers, and closes with ANT-1000. The Scorched Dunes open with the Pharaoh, then Scorch (scorpion), Grumble (sandworm) and Rollo (armadillo), and close with the Iron Sphinx. The Midnight Swamp opens with Mother Leech, then the Bog King (toad), Mama Skeeter (mosquito) and King Fungus, and closes with Octo-Tron. Their health scales with your build and they enrage at half health.
-- **The Gauntlet** after the Swamp: an endless run of laps that mixes every area's creatures, with a random opener, three bosses from anywhere and a random closer, all enraged from the start.
+- **Fifteen bosses** with intros and death animations, and no repeats across the first three areas. The Meadow opens with the Queen, then Big Chompy, Talon and Slithers, and closes with ANT-1000. The Scorched Dunes open with the Pharaoh, then Scorch (scorpion), Grumble (sandworm) and Rollo (armadillo), and close with the Iron Sphinx. The Midnight Swamp opens with Mother Leech, then the Bog King (toad), Mama Skeeter (mosquito) and King Fungus, and closes with Octo-Tron. Their health scales with your build and they enrage at half health. Every gun aims at a boss in range unless something is close enough to bite.
+- **The Gauntlet** after the Swamp: an endless run of laps that mixes every area's creatures, with a random opener, three bosses from anywhere and a random closer, all enraged from the start. Your record for Gauntlet laps cleared shows on the menu.
 - **Elite ants** (splitter, shielded, speedy) that drop treasure chests with a free upgrade.
 - **Map power-ups** (seed magnet, freeze bomb, rage chilli) and **hazards** (ant tunnels, sticky sap, swarm waves).
-- **Easy, Normal and Nightmare** difficulty (Nightmare unlocks after a 10-minute run), plus a **daily challenge** with a fixed path and twist each day.
+- **Easy, Normal and Nightmare** difficulty (Nightmare unlocks after a 10-minute run), a **daily challenge** with a fixed path and twist each day, and a **weekly challenge** that stacks two twists and lets you pick your path.
+- **Rerolls and banishes** on the level-up screen: one of each per run, more from the shop. A reroll deals three new choices; a banish bins an upgrade for the rest of the run.
+- **Bestiary**: every creature and boss you've met, with how many you've squished. The ones you haven't met yet are silhouettes.
 - **Wardrobe**: capybara skins with stat bonuses and hats, unlocked by progress and achievements. The late-game ones take real effort: the Mummy and Bog Beast skins for beating the Iron Sphinx and Octo-Tron, Inferno for a 30-minute run, Diamond for 100,000 kills, and the Pharaoh, Samurai, Laurels and Antennae hats for 40 boss kills, beating all 15 bosses, beating a Gauntlet closer and surviving 20 minutes on Nightmare.
 - **Heavy weapons** on reaching the Dunes: a second gun that fires alongside your first (Tesla Coil, Missile Pod, Saw Launcher or Frost Cannon), with its own upgrades and evolution.
 - **Sidekicks** from level 10: a drone buddy or a boomerang, levelled up separately from your gun.
@@ -36,7 +39,7 @@ python -m http.server 8000
 - **Run summary** after each death (what killed you, boss times, damage by source, your build) and a build view on the pause screen.
 - **Settings** for music and sound volume, screen shake, flashes, damage numbers and a low-graphics mode.
 - First-run tips, and a **Report a bug** button that fills in your run details (as an email on petrieuk.co.uk, or a GitHub issue on the test build).
-- Music, hit-stop, screen shake, phone and controller support.
+- Music with its own loop for each area (and a boss loop for each), hit-stop, screen shake, phone and controller support.
 - A small **Buy me a coffee** strip at the foot of the home screen (never shown during a run).
 
 Progress, best runs and cosmetics are saved in the browser's local storage.
