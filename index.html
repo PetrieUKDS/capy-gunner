@@ -401,7 +401,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '32';
+const GAME_VERSION = '33';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -1077,6 +1077,7 @@ function killAnt(a, src) {
     G.nextBoss = Math.max(G.nextBoss, G.t + G.D.bossGap * 0.6);
     G.stats.bosses.push({ name: BOSSES[a.kind].name, secs: G.t - (a.spawnT || G.t) });
     if (G.bossClean) award('flawless');
+    gc('boss-beaten/' + a.kind);
     if (!prog.beaten[a.kind]) { prog.beaten[a.kind] = true; saveProg(); }
     if (a.kind === 'sphinx') award('sphinx');
     if (a.kind === 'octo') award('octo');
@@ -1272,13 +1273,13 @@ function openLevelUp(src) {
     b.innerHTML = `${ico}<span><strong>${u.name}</strong><small>${u.desc}${u.id !== 'heal' && u.id !== 'evo' && u.id !== 'swevo' ? ` \u00b7 level ${lv + 1} of ${u.max}` : ''}</small></span><kbd>${i + 1}</kbd>`;
     b.onclick = () => {
       if (G.banishing && !['evo', 'swevo', 'heal'].includes(u.id)) { // binned: never offered again this run
-        G.banned.push((u.weapon ? 'w:' : u.sup ? 's:' : 'g:') + u.id); G.banishes--; G.banishing = false; sfx.hurt(); openLevelUp(src); return;
+        G.banned.push((u.weapon ? 'w:' : u.sup ? 's:' : 'g:') + u.id); gc('banish/' + u.id); G.banishes--; G.banishing = false; sfx.hurt(); openLevelUp(src); return;
       }
       if (u.id === 'evo') {
-        evo.apply(p.w); p.evo = evo.name; p.tier = 3; G.banner = { txt: evo.name.toUpperCase() + '!', life: 2.6 };
+        evo.apply(p.w); p.evo = evo.name; gc('evolve/' + p.weapon); p.tier = 3; G.banner = { txt: evo.name.toUpperCase() + '!', life: 2.6 };
         G.flash = 0.5; G.flashCol = '255,225,120'; award('evolve');
       } else if (u.id === 'swevo') {
-        S.evo.apply(p.s); p.swEvo = S.evo.name; G.banner = { txt: S.evo.name.toUpperCase() + '!', life: 2.6 }; G.flash = 0.5; G.flashCol = '170,225,255';
+        S.evo.apply(p.s); p.swEvo = S.evo.name; gc('evolve/' + p.sw); G.banner = { txt: S.evo.name.toUpperCase() + '!', life: 2.6 }; G.flash = 0.5; G.flashCol = '170,225,255';
       } else if (u.sup) {
         u.apply(p.s); p.swlv[u.id] = lv + 1;
       } else if (u.weapon) {
@@ -1293,7 +1294,7 @@ function openLevelUp(src) {
   });
   // rerolls deal three new choices; a banish bins the next one you tap for the rest of the run
   const tools = $('luTools'); tools.innerHTML = ''; tools.hidden = !(G.rerolls || G.banishes); box.classList.toggle('banishing', !!G.banishing);
-  if (G.rerolls) { const r = document.createElement('button'); r.type = 'button'; r.className = 'ibtn wbtn'; r.id = 'rerollBtn'; r.textContent = `Reroll (${G.rerolls})`; r.onclick = () => { G.rerolls--; G.banishing = false; openLevelUp(src); }; tools.appendChild(r); }
+  if (G.rerolls) { const r = document.createElement('button'); r.type = 'button'; r.className = 'ibtn wbtn'; r.id = 'rerollBtn'; r.textContent = `Reroll (${G.rerolls})`; r.onclick = () => { gc('reroll'); G.rerolls--; G.banishing = false; openLevelUp(src); }; tools.appendChild(r); }
   if (G.banishes) {
     const r = document.createElement('button'); r.type = 'button'; r.className = 'ibtn wbtn'; r.id = 'banishBtn';
     const label = () => { r.textContent = G.banishing ? 'Tap one to bin it' : `Banish (${G.banishes})`; r.classList.toggle('on', G.banishing); r.setAttribute('aria-pressed', G.banishing); box.classList.toggle('banishing', G.banishing); };
@@ -1311,7 +1312,7 @@ function openPathChoice(box) {
     b.innerHTML = `<canvas width="240" height="76" aria-hidden="true"></canvas><span><strong>${P.name}</strong><small>${P.blurb}</small></span><kbd>${i + 1}</kbd>`;
     const g = b.querySelector('canvas').getContext('2d');
     g.translate(id === 'sniper' ? 62 : id === 'pistolier' ? 104 : 88, id === 'pistolier' ? 30 : 40); g.scale(2.3, 2.3); drawGun(g, id, 2, false, false);
-    b.onclick = () => { p.weapon = id; p.w = { ...P.base }; p.cd = 0; G.banner = { txt: P.name.toUpperCase() + ' PATH!', life: 2 }; closeLevelUp(); };
+    b.onclick = () => { gc('path/' + id); p.weapon = id; p.w = { ...P.base }; p.cd = 0; G.banner = { txt: P.name.toUpperCase() + ' PATH!', life: 2 }; closeLevelUp(); };
     box.appendChild(b);
   });
   $('levelup').hidden = false;
@@ -1326,7 +1327,7 @@ function openSuperChoice() {
   SUPER_ORDER.forEach((id, i) => {
     const S = SUPERS[id], b = document.createElement('button'); b.type = 'button'; b.className = 'pick'; b.id = 'pick' + i;
     b.innerHTML = `<span class="ico sup">${S.badge}</span><span><strong>${S.name}</strong><small>${S.blurb}</small></span><kbd>${i + 1}</kbd>`;
-    b.onclick = () => { p.sw = id; p.s = { ...S.base }; G.swCd = 0.5; G.banner = { txt: S.name.toUpperCase() + '!', life: 2.2 }; closeLevelUp(); };
+    b.onclick = () => { gc('heavy/' + id); p.sw = id; p.s = { ...S.base }; G.swCd = 0.5; G.banner = { txt: S.name.toUpperCase() + '!', life: 2.2 }; closeLevelUp(); };
     box.appendChild(b);
   });
   $('levelup').hidden = false;
@@ -1858,6 +1859,7 @@ function updateDeath(dt) {
       G.lap++; G.bioK = 0; const bio = biomeNow();
       if (!G.p.sw) G.superDue = true; // a second gun to go with the new area
       const cleared = G.lap - 3; // Gauntlet laps cleared this run
+      gc(cleared > 0 ? 'gauntlet-lap/' + Math.min(cleared, 10) : 'area/' + gcArea());
       const record = cleared > (prog.gauntlet || 0); if (record) { prog.gauntlet = cleared; saveProg(); }
       later(1800, () => { if (G && state !== 'menu') G.toast = cleared > 0
         ? { txt: 'GAUNTLET LAP ' + cleared + ' CLEARED', sub: record ? 'A new Gauntlet record!' : 'Your record: ' + prog.gauntlet + (prog.gauntlet > 1 ? ' laps' : ' lap'), life: 4.5, max: 4.5 }
@@ -3367,7 +3369,7 @@ function hud() {
 function start(mode) {
   audio(); newGame(); state = 'play';
   mode = mode || prog.diff; if (mode === 'nightmare' && !nightmareOpen()) mode = 'normal';
-  const D = G.D = rulesFor(mode); G.mode = mode; G.nextBoss = D.bossGap;
+  const D = G.D = rulesFor(mode); G.mode = mode; G.nextBoss = D.bossGap; gc('run-start/' + mode);
   G.unlocked0 = SKINS.concat(HATS).filter(isUnlocked);
   // unlocked skins carry a stat bonus
   const worn = SKINS.find(s => s.id === prog.skin && isUnlocked(s)) || SKINS[0], bn = worn.bonus || {}, p = G.p;
@@ -3401,6 +3403,7 @@ function gameOver() {
   // easy runs don't count towards survival unlocks
   const before = G.unlocked0 || [];
   G.coins = Math.floor(G.kills / 25 + G.t / 10 + G.stats.elites * 5 + G.bossKills * 25);
+  const mins = G.t / 60; gc(`run-end/${gcArea()}/${mins < 2 ? '0-2' : mins < 5 ? '2-5' : mins < 10 ? '5-10' : mins < 20 ? '10-20' : '20-plus'}-min`); gc('killed-by/' + gcSlug(G.stats.killer));
   prog.kills += G.kills; prog.bosses += G.bossKills; if (m !== 'easy') prog.best = Math.max(prog.best, G.t); prog.runs++; prog.coins += G.coins; saveProg();
   $('sumBody').innerHTML = runSummary(); $('bugOver').href = bugUrl();
   const fresh = SKINS.concat(HATS).filter(it => isUnlocked(it) && !before.includes(it));
@@ -3449,6 +3452,11 @@ function runSummary() {
 }
 // opens a GitHub issue (or, on petrieuk.co.uk, an email) with the run details filled in; the tester adds what happened
 const ON_SITE = /(^|\.)petrieuk\.co\.uk$/.test(location.hostname);
+// anonymous event counts: on petrieuk.co.uk the site adds GoatCounter to this page; anywhere else this does nothing.
+// Nothing identifies the player: just what happened (a run started, an area reached, what ended a run).
+function gc(what) { try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'capybara/' + what, title: what, event: true }); } catch (e) {} }
+const gcSlug = t => String(t).toLowerCase().replace(/^an? /, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const gcArea = () => { const b = biomeNow(); return b.gauntlet ? 'gauntlet' : b.art || 'meadow'; };
 function bugUrl() {
   const lines = ['**What happened?**', '', '', '**What did you expect to happen?**', '', '', '---',
     `Version: ${GAME_VERSION}`, `Device: ${navigator.userAgent}`, `Screen: ${innerWidth}x${innerHeight}${TOUCH ? ', touch' : ''}${pad.gp ? ', controller' : ''}`];
@@ -3495,7 +3503,7 @@ function bestTile(art, name, n, verb = 'squished') {
   return t;
 }
 function openBestiary() {
-  $('menu').hidden = true; $('bestiary').hidden = false;
+  gc('bestiary'); $('menu').hidden = true; $('bestiary').hidden = false;
   const name = k => TYPE_NAME[k].replace(/^an? /, ''), cap = t => t.charAt(0).toUpperCase() + t.slice(1);
   const box = $('bestList'); box.innerHTML = ''; let met = 0, all = 0;
   const section = (title, list) => {

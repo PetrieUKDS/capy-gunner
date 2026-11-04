@@ -44,6 +44,8 @@ python -m http.server 8000
 
 Progress, best runs and cosmetics are saved in the browser's local storage.
 
+On petrieuk.co.uk the site adds [GoatCounter](https://www.goatcounter.com/), a cookie-free visit counter, and the game sends it a few anonymous events (a run started, a path or heavy weapon picked, an area reached, a boss beaten, what ended a run, rerolls and banishes used) so we can see how far players get. Nothing identifies the player. Anywhere else, including the test build, nothing is sent.
+
 Art made with Pixa.
 
 ## Copyright
