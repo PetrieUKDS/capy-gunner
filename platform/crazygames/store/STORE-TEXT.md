@@ -75,6 +75,7 @@ Landscape and portrait both work. The layout fits the screen it's given.
 
 These are real gameplay frames, rendered by the covers tool in `../covers/`. The only text on them is the title, as CrazyGames requires. The game's art was made with Pixa. CrazyGames publishes no AI-art policy, but say so if they ask.
 
-## Still to make
 
-- **Gameplay video** (optional but recommended): 15–20 seconds, no sound, no text, landscape 1080p and portrait 1080p 2:3, opening on the cover. The capy-reel recorder can produce this with the title and end cards turned off.
+## Gameplay videos
+
+`preview-landscape-1920x1080.mp4` and `preview-portrait-1080x1620.mp4`: 19 s each, 30 fps, H.264, no audio track, about 28 MB each, so under the 50 MB limit. Both are real-time gameplay (no fast-forward) and open on the cover title, which fades out within the first second. They show the swarm, an airstrike, and a fight with the Queen. Boss entrances and deaths are letterboxed cut-scenes, so they're cut out, because CrazyGames rejects black bars. The videos aren't committed (too big for git). Re-make them with `VIDEO.record()` (see `../covers/video.js`) and `../covers/encode.mjs`.

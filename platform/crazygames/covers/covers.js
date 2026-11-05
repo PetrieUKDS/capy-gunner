@@ -44,13 +44,16 @@ window.COVERS = (() => {
   const zoom = () => window.__ZOOM || Math.max(0.62, Math.min(1, Math.min(window.__LW, window.__LH) / 720));
   const innerWidthLogical = () => window.__LW / zoom(), innerHeightLogical = () => window.__LH / zoom();
 
-  function outlined(txt, x, y, size, fill) {
+  function outlined(c, txt, x, y, size, fill) {
     c.font = `${size}px ${FONT}`; c.lineJoin = 'round';
     c.lineWidth = size * 0.2; c.strokeStyle = '#1a1206'; c.strokeText(txt, x, y);
     c.fillStyle = fill; c.fillText(txt, x, y);
   }
-  function title() {
-    const L = { landscape: { w: 0.5, y: 0.2, shade: 0.42 }, portrait: { w: 0.84, y: 0.15, shade: 0.34 }, square: { w: 0.78, y: 0.19, shade: 0.42 } }[SHAPE];
+  // the title as it sits on the covers; the videos open on it so they match the static cover
+  const LAYOUT = { landscape: { w: 0.5, y: 0.2, shade: 0.42 }, portrait: { w: 0.84, y: 0.15, shade: 0.34 }, square: { w: 0.78, y: 0.19, shade: 0.42 } };
+  LAYOUT.vlandscape = LAYOUT.landscape; LAYOUT.vportrait = LAYOUT.portrait;
+  function title(c = COMP_CTX, OW = comp.width, OH = comp.height, shape = SHAPE, alpha = 1) {
+    const L = LAYOUT[shape]; c.save(); c.globalAlpha = alpha;
     // a soft dark band behind the title so it reads on any background
     const g = c.createLinearGradient(0, 0, 0, OH * L.shade);
     g.addColorStop(0, 'rgba(8,14,9,0.62)'); g.addColorStop(1, 'rgba(8,14,9,0)');
@@ -59,10 +62,11 @@ window.COVERS = (() => {
     c.save(); c.textAlign = 'center'; c.textBaseline = 'alphabetic';
     c.translate(OW / 2, OH * L.y); c.rotate(-0.04);
     c.shadowColor = 'rgba(0,0,0,0.45)'; c.shadowBlur = size * 0.12; c.shadowOffsetY = size * 0.06;
-    outlined('CAPYBARA', 0, 0, size, '#ffd23a');
-    outlined('WITH A GUN', 0, size * 0.92, Math.round(size * 0.74), '#ff9a1f');
-    c.restore();
+    outlined(c, 'CAPYBARA', 0, 0, size, '#ffd23a');
+    outlined(c, 'WITH A GUN', 0, size * 0.92, Math.round(size * 0.74), '#ff9a1f');
+    c.restore(); c.restore();
   }
+  const COMP_CTX = c;
   function render(o = {}) {
     const G = T.G;
     // clean frame: no white hit flashes, screen flashes or floating text, and the camera raised
@@ -85,5 +89,5 @@ window.COVERS = (() => {
     const name = o.name || `cover-${SHAPE}-${OW}x${OH}.png`;
     return { frame: f, saved: o.dry ? 'not saved' : await save(name), boss: T.G.boss && T.BOSSES[T.G.boss.kind].name, area: T.biomeNow().name };
   }
-  return { shot, scene, frameUp, render, save, comp };
+  return { shot, scene, frameUp, render, save, comp, title, viewH: innerHeightLogical, FONT };
 })();

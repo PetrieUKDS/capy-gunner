@@ -36,12 +36,13 @@ i = s.rindex('})();\n</script>')
 s = s[:i] + hook + s[i:]
 boot = """<script>
 const __shape = new URLSearchParams(location.search).get('shape') || 'landscape';
-const __SIZES = { landscape: [960, 540, 1920, 1080, 1.1], portrait: [540, 810, 800, 1200, 0.95], square: [540, 540, 800, 800, 0.95] };
+const __SIZES = { landscape: [960, 540, 1920, 1080, 1.1], portrait: [540, 810, 800, 1200, 0.95], square: [540, 540, 800, 800, 0.95],
+  vlandscape: [960, 540, 1920, 1080, 1.1], vportrait: [540, 810, 1080, 1620, 1.2] }; // v* = gameplay preview videos
 [window.__LW, window.__LH, window.__PX, window.__PY, window.__ZOOM] = __SIZES[__shape];
 const __z = new URLSearchParams(location.search).get('zoom'); if (__z) window.__ZOOM = +__z; window.__manual = true; window.__SHAPE = __shape;
 </script>"""
 rep('<meta charset="utf-8">', '<meta charset="utf-8">\n' + boot)
-for f in ('reel.js', 'covers.js'):
+for f in ('reel.js', 'covers.js', 'video.js'):
     s += '\n<script>\n' + open(os.path.join(HERE, f), encoding='utf8').read() + '\n</script>\n'
 
 os.makedirs(OUT, exist_ok=True)
