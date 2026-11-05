@@ -35,3 +35,11 @@ git worktree remove ../capybara-crazygames
 ```bash
 git branch -D crazygames
 ```
+
+## Store listing and covers
+
+`store/` holds the draft listing text (`STORE-TEXT.md`) and the three covers CrazyGames asks for: 1920×1080, 800×1200 and 800×800. The covers are real gameplay frames. To make new ones:
+
+1. Run `python platform/crazygames/covers/mkcovers.py` to build `dist/covers/covers.html`, a hooked copy of the game. The real game isn't touched.
+2. Run `node platform/crazygames/covers/receive.mjs` to save the images to `dist/covers/out/`.
+3. Serve `dist/covers` on port 5261 (preview `capybara-covers`). Open `covers.html?shape=landscape`, `portrait` or `square` (add `&zoom=1.2` to frame closer), then run `await COVERS.shot({ name: '...' })` in the console. Options pick the frame: `ants`, `maxBelow`, `minBelow`, `spanX`, `lift`, `minDist`, `tries`.
