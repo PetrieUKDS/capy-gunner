@@ -50,7 +50,10 @@ window.COVERS = (() => {
     c.fillStyle = fill; c.fillText(txt, x, y);
   }
   // the title as it sits on the covers; the videos open on it so they match the static cover
-  const LAYOUT = { landscape: { w: 0.5, y: 0.2, shade: 0.42 }, portrait: { w: 0.84, y: 0.15, shade: 0.34 }, square: { w: 0.78, y: 0.19, shade: 0.42 } };
+  // CrazyGames puts badges ("Hot", "Updated") in a label zone at the top-left of each cover, roughly
+  // 36% x 20% (landscape), 40% x 10% (portrait) and 35% x 30% (square), so the title keeps clear of it:
+  // shifted right on the landscape and square covers, lower on the portrait one. x = title centre.
+  const LAYOUT = { landscape: { w: 0.46, x: 0.63, y: 0.2, shade: 0.42 }, portrait: { w: 0.8, x: 0.5, y: 0.235, shade: 0.44 }, square: { w: 0.54, x: 0.68, y: 0.2, shade: 0.42 } };
   LAYOUT.vlandscape = LAYOUT.landscape; LAYOUT.vportrait = LAYOUT.portrait;
   function title(c = COMP_CTX, OW = comp.width, OH = comp.height, shape = SHAPE, alpha = 1) {
     const L = LAYOUT[shape]; c.save(); c.globalAlpha = alpha;
@@ -60,7 +63,7 @@ window.COVERS = (() => {
     c.fillStyle = g; c.fillRect(0, 0, OW, OH * L.shade);
     c.font = `100px ${FONT}`; const size = Math.round(100 * OW * L.w / c.measureText('CAPYBARA').width);
     c.save(); c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-    c.translate(OW / 2, OH * L.y); c.rotate(-0.04);
+    c.translate(OW * L.x, OH * L.y); c.rotate(-0.04);
     c.shadowColor = 'rgba(0,0,0,0.45)'; c.shadowBlur = size * 0.12; c.shadowOffsetY = size * 0.06;
     outlined(c, 'CAPYBARA', 0, 0, size, '#ffd23a');
     outlined(c, 'WITH A GUN', 0, size * 0.92, Math.round(size * 0.74), '#ff9a1f');

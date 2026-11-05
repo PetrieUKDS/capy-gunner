@@ -73,9 +73,9 @@ Landscape and portrait both work. The layout fits the screen it's given.
 | `cover-portrait-800x1200.png` | 800×1200 (2:3) |
 | `cover-square-800x800.png` | 800×800 (1:1) |
 
-These are real gameplay frames, rendered by the covers tool in `../covers/`. The only text on them is the title, as CrazyGames requires. The game's art was made with Pixa. CrazyGames publishes no AI-art policy, but say so if they ask.
+These are real gameplay frames, rendered by the covers tool in `../covers/`. The title keeps clear of the top-left label zone, where CrazyGames puts its badges. The only text on them is the title, as CrazyGames requires. The game's art was made with Pixa. CrazyGames publishes no AI-art policy, but say so if they ask.
 
 
 ## Gameplay videos
 
-`preview-landscape-1920x1080.mp4` and `preview-portrait-1080x1620.mp4`: 19 s each, 30 fps, H.264, no audio track, about 28 MB each, so under the 50 MB limit. Both are real-time gameplay (no fast-forward) and open on the cover title, which fades out within the first second. They show the swarm, an airstrike, and a fight with the Queen. Boss entrances and deaths are letterboxed cut-scenes, so they're cut out, because CrazyGames rejects black bars. The videos aren't committed (too big for git). Re-make them with `VIDEO.record()` (see `../covers/video.js`) and `../covers/encode.mjs`.
+`preview-landscape-1920x1080.mp4` and `preview-portrait-1080x1620.mp4`: 19 s each, 30 fps, H.264, no audio track, about 25–27 MB each, so under the 50 MB limit. Both are real-time gameplay (no fast-forward) and open on the cover title, which fades out within the first second. They show the swarm, an airstrike, and a fight with the Queen. Boss entrances and deaths are letterboxed cut-scenes, so they're cut out, because CrazyGames rejects black bars. The videos aren't committed (too big for git). Re-make them with `VIDEO.record()` (see `../covers/video.js`) and `../covers/encode.mjs`.
