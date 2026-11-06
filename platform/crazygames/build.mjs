@@ -54,6 +54,12 @@ page = patch(page, 'href="https://buymeacoffee.com/petrieuk"', 'href="#"', 'dona
 page = patch(page, '<a class="ibtn wbtn" id="bugPause" target="_blank" rel="noopener">', '<a class="ibtn wbtn" id="bugPause" hidden>', 'pause-screen bug link hidden');
 page = patch(page, /<a class="ibtn wbtn" id="bugOver"[^>]*>/, '<a class="ibtn wbtn" id="bugOver" hidden>', 'game-over bug link hidden');
 page = patch(page, /<\/style>\r?\n<style>/, '</style>\n<style>/* CrazyGames build */ .coffee, #bugPause, #bugOver { display: none !important; }\n', 'hide removed bits');
+// The game sits in a short frame on the CrazyGames page, so Play has to come before the instructions:
+// at 1366x768 it was below the fold and the only clue was a thin scrollbar. The card is a grid, so
+// `order` moves them to the end without touching the markup, and the tab and controller order stay as they were.
+page = patch(page, '/* CrazyGames build */ ', `/* CrazyGames build */ #menu .lede, #menu .keys { order: 1; }
+@media (max-height: 520px) { #menu .card { padding: 16px 20px; gap: 10px; } #menu h1 { font-size: 40px; } }
+`, 'Play above the instructions');
 page = page.replace(/<link rel="manifest"[^>]*>\s*/g, '').replace(/<link rel="apple-touch-icon"[^>]*>\s*/g, '');
 
 // 4. write the build
