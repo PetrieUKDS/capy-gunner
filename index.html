@@ -54,7 +54,8 @@ body {
 .clock { font: 30px/1 var(--display); text-align: center; text-shadow: 0 2px 0 #000; font-variant-numeric: tabular-nums; }
 .clock small { display: block; font: 600 11px/1.6 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .right { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; align-items: center; }
-.stat { font: 800 13px var(--body); text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums; }
+.stat { font: 800 13px var(--body); text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums; text-align: right; }
+@media (max-width: 900px) { .stat { flex-basis: 100%; } }
 .ibtn {
   pointer-events: auto; font: 800 12px var(--body); color: var(--ink); background: rgba(0,0,0,.45);
   border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer;
@@ -284,7 +285,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 .padnav .screen button:focus { outline: 3px solid var(--orange); outline-offset: 2px; }
 .overbtns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 /* phones: thumb-sized HUD buttons */
-@media (max-width: 480px) { .right { flex-direction: column; align-items: flex-end; gap: 6px; } #camBtn { display: none; } }
+@media (max-width: 480px) { .right { flex-direction: column; align-items: flex-end; gap: 6px; } #camBtn { display: none; } .stat { flex-basis: auto; line-height: 1.15; } }
 /* phones: the boss bar runs along the bottom edge, with the airstrike button and thumbstick lifted clear of it */
 @media (max-width: 480px) {
   .boss { position: fixed; width: auto; justify-self: stretch; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
@@ -313,7 +314,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
   </div>
   <div class="clock" id="clock">0:00<small>survived</small></div>
   <div class="right">
-    <span class="stat" id="kills">0 ants</span>
+    <span class="stat" id="kills">0 Enemies Defeated</span>
     <button class="ibtn" id="camBtn" type="button" title="Gunner cam (C)">CAM</button>
     <button class="ibtn" id="muteBtn" type="button" title="Sound (M)">SOUND ON</button>
     <button class="ibtn" id="pauseBtn" type="button" title="Pause (P)">PAUSE</button>
@@ -360,7 +361,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
     <h2>Wardrobe</h2>
     <div class="wtop">
       <canvas id="wPreview" width="240" height="240" aria-label="Your capybara"></canvas>
-      <div class="winfo"><strong id="wName">Classic</strong><p id="wPerk"></p><p class="best" id="wStats"></p></div>
+      <div class="winfo"><strong id="wName">Classic</strong><p id="wPerk"></p><p id="wHatPerk"></p><p class="best" id="wStats"></p></div>
     </div>
     <h3 class="wh">Skins</h3>
     <div class="wgrid" id="wSkins"></div>
@@ -443,7 +444,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
     <h2 id="overTitle">The ants got you</h2>
     <div class="results">
       <div><b id="rTime">0:00</b><span>survived</span></div>
-      <div><b id="rKills">0</b><span>ants</span></div>
+      <div><b id="rKills">0</b><span>enemies defeated</span></div>
       <div><b id="rLevel">1</b><span>level</span></div>
     </div>
     <div class="unlocks" id="unlocks" hidden></div>
@@ -461,7 +462,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '37';
+const GAME_VERSION = '39';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -495,7 +496,7 @@ function loadBest(m) {
 }
 function saveBest(b, m) { try { localStorage.setItem(bestKey(m), JSON.stringify(b)); } catch (e) {} }
 function showBest(m) {
-  const line = k => { const b = loadBest(k), n = MODE_NAME[k]; return b ? `${n} best: ${fmt(b.time)} survived, ${b.kills} ants` : `No ${n.toLowerCase()} best yet. Go set one.`; };
+  const line = k => { const b = loadBest(k), n = MODE_NAME[k]; return b ? `${n} best: ${fmt(b.time)} survived, ${b.kills.toLocaleString()} enemies defeated` : `No ${n.toLowerCase()} best yet. Go set one.`; };
   const g = prog.gauntlet ? ` \u00b7 Gauntlet record: ${prog.gauntlet} lap${prog.gauntlet > 1 ? 's' : ''} cleared` : '';
   $('bestMenu').textContent = line(prog.diff) + g; $('bestOver').textContent = line(m || prog.diff) + g;
 }
@@ -882,7 +883,7 @@ const SUPERS = {
     evo: { key: 'wide', name: 'Absolute Zero', desc: 'Blasts freeze ants solid, and frozen ants take triple damage', apply: w => { w.freeze = 1.5; w.shatter = Math.max(w.shatter, 3); } } }
 };
 const SUPER_ORDER = ['tesla', 'missiles', 'saw', 'frost'];
-let HEAVY_K = 0.4;
+const HEAVY_K = { tesla: 0.4, missiles: 0.3, saw: 0.3, frost: 0.12 }; // frost is lowest because it hits everything around you at once
 const GENERAL = [
   { id: 'speed',  ico: 'S', name: 'Zoomies',         desc: '+12% move speed',                          max: 5, apply: p => p.speed *= 1.12 },
   { id: 'hp',     ico: 'H', name: 'Thick Fur',       desc: '+25 max health and heal 25',               max: 6, apply: p => { p.maxHp += 25; p.hp = Math.min(p.maxHp, p.hp + 25); } },
@@ -891,8 +892,19 @@ const GENERAL = [
   { id: 'orbit',  ico: 'O', name: 'Orange Orbit',    desc: 'An orange spins around you and bonks ants', max: 5, apply: p => { p.orbit++; p.orbitDmg += 4; } },
   { id: 'drone',  ico: 'D', name: 'Drone Buddy',     desc: 'A sidekick drone that shoots the nearest ant. More levels, faster and harder', max: 5, side: true, apply: p => { p.side = 'drone'; p.sideLv++; } },
   { id: 'rang',   ico: 'B', name: 'Boomerang',       desc: 'A sidekick boomerang that hits ants going out and coming back. More levels, more boomerangs', max: 5, side: true, apply: p => { p.side = 'rang'; p.sideLv++; } },
-  { id: 'strike', ico: 'A', name: 'Chopper Pilot',   desc: 'Shorter airstrike cooldown and 4 more missiles', max: 3, apply: p => { p.strikeCdMax *= 0.75; p.strikeNeed = Math.round(p.strikeNeed * 0.8); p.missiles += 4; } }
+  { id: 'strike', ico: 'A', name: 'Chopper Pilot',   desc: 'Shorter airstrike cooldown and 4 more missiles', max: 3, apply: p => { p.strikeCdMax *= 0.75; p.strikeNeed = Math.round(p.strikeNeed * 0.8); p.missiles += 4; } },
+  // a second tier that opens up in the Midnight Swamp, when the first set has usually run out
+  { id: 'overclock', ico: 'X', from: 2, name: 'Overclock',    desc: '+8% damage from everything',                          max: 5, apply: p => p.dmgMul *= 1.08 },
+  { id: 'frenzy',    ico: 'F', from: 2, name: 'Swamp Frenzy', desc: '+6% fire rate on your main gun',                      max: 4, apply: p => p.rateMul *= 1.06 },
+  { id: 'giant',     ico: 'K', from: 2, name: 'Giant Slayer', desc: '+15% damage to bosses and elites',                    max: 4, apply: p => p.giant += 0.15 },
+  { id: 'hide',      ico: 'Y', from: 2, name: 'Bog Hide',     desc: 'Everything hurts 8% less',                            max: 4, apply: p => p.armor *= 0.92 },
+  { id: 'leech',     ico: 'L', from: 2, name: 'Leech Bite',   desc: 'Heal 3% of max health for every 40 enemies defeated', max: 3, apply: p => p.leech++ },
+  { id: 'gas',       ico: 'G', from: 2, name: 'Swamp Gas',    desc: 'Defeated enemies can burst in a cloud that hurts everything near them', max: 3, apply: p => p.gas++ },
+  { id: 'hoard',     ico: '$', from: 2, name: 'Seed Hoarder', desc: '+15% XP from seeds',                                  max: 3, apply: p => p.xpMul *= 1.15 }
 ];
+// the core damage and fire-rate upgrades of every gun also gain 2 extra levels from the Swamp on
+const MASTERY = new Set(['trigger', 'rounds', 'quick', 'hollow', 'buck', 'pump', 'cal', 'bolt', 'fuel', 'powder', 'load', 'volt', 'cap', 'war', 'auto', 'teeth', 'reload', 'cold', 'rapid']);
+const maxOf = u => u.max + (G.lap >= 2 && MASTERY.has(u.id) ? 2 : 0);
 /* Difficulty and the daily challenge are sets of multipliers: ant health, speed and bite, how often
    ants, elites and bosses turn up, and your own health, damage and XP. */
 const DIFF = {
@@ -988,13 +1000,14 @@ const BOSS_ORDER = ['queen', 'caiman', 'harpy', 'anaconda', 'mecha']; // each ar
 let state = 'menu', G = null;
 function newGame() {
   G = {
-    t: 0, kills: 0, bossKills: 0, shake: 0, spawnAcc: 0, nextBoss: 120, mode: 'normal', D: rulesFor('normal'), hitStop: 0, hsCd: 0, flash: 0, flashCol: '255,255,255', toast: null,
+    hat: 'none', hatCd: 0, mines: [], xmark: null, fires: [], fireT: 0, fireTick: 0, slashes: [], hatUsed: false, hatFly: 0, cursed: null, curseCd: 0, vicT: 0,
+    t: 0, kills: 0, leechN: 0, gassing: false, bossKills: 0, shake: 0, spawnAcc: 0, nextBoss: 120, mode: 'normal', D: rulesFor('normal'), hitStop: 0, hsCd: 0, flash: 0, flashCol: '255,255,255', toast: null,
     nextElite: 45, nextPickup: 25, lap: 0, bioK: 1, coins: 0, droneA: 0, droneCd: 0, rangCd: 0, drone: null, rangs: [], swCd: 1, saws: [], rockets: [], zaps: [], frosts: [], superDue: false,
     stats: { dmg: {}, bosses: [], elites: 0, killer: 'the swarm' }, nextTunnel: 60, nextSap: 90, nextWave: 150, wave: null, dragonT: 0, chestsOpened: 0, bossClean: true, bossIdx: 0, boss: null, banner: null, intro: null, death: null, cam: { x: 0, y: 0 },
     p: { x: 0, y: 0, r: 17, hp: 100, maxHp: 100, speed: 175, magnet: 85, regen: 0, orbit: 0, orbitDmg: 14,
          xp: 0, level: 1, next: 5, inv: 0, aim: 0, aim2: 0, walk: 0, moving: false, flash: 0, flash2: 0, firing: false, spinT: 0, alt: false, target2: null,
          weapon: 'pistol', w: { ...PATHS.pistol.base }, wlv: {}, tier: 0, cd: 0, burstLeft: 0, burstT: 0, upg: {},
-         strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0, sw: null, s: null, swlv: {}, swEvo: null },
+         strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0, sw: null, s: null, swlv: {}, swEvo: null, armor: 1, giant: 0, leech: 0, gas: 0, safeT: 0 },
     ants: [], bullets: [], spit: [], nades: [], booms: [], gems: [], melons: [], parts: [], texts: [], strikes: [], orbA: 0,
     chests: [], pickups: [], tunnels: [], puddles: [], clouds: [], rerolls: 0, banishes: 0, banished: 0, banned: [], banishing: false
   };
@@ -1022,13 +1035,14 @@ const turnTo = (cur, want, k) => { let d = want - cur; d = Math.atan2(Math.sin(d
 // seeds needed for the next level: steep enough that a build isn't maxed out before the first lap ends
 const xpNeed = lv => Math.floor(5 + lv * 3.5 + Math.pow(lv, XP_POW));
 const XP_POW = 2.1;
+const stageHp = lap => lap < 3 ? [1, 1.3, 2][lap] : 2.6 + 0.4 * (lap - 3);
 function spawnAnt(type, x, y) {
   type = foeType(type); const T = TYPES[type], p = G.p;
   if (x === undefined) {
     const ang = Math.random() * Math.PI * 2, d = Math.hypot(VW, VH) / 2 + 60;
     x = p.x + Math.cos(ang) * d; y = p.y + Math.sin(ang) * d;
   }
-  const a = { type, ...T, x, y, hp: T.hp * (1 + G.t / 100) * G.D.hp * (1 + 0.3 * G.lap), spd: T.spd * Math.min(1.45, 1 + G.t / 600) * G.D.spd, biteCd: 0, a: Math.atan2(p.y - y, p.x - x),
+  const a = { type, ...T, x, y, hp: T.hp * (1 + G.t / 100) * G.D.hp * stageHp(G.lap), spd: T.spd * Math.min(1.45, 1 + G.t / 600) * G.D.spd, biteCd: 0, a: Math.atan2(p.y - y, p.x - x),
               walk: Math.random() * 6, hitT: 0, orbHit: 0, spitCd: rand(1, 3), chgCd: rand(1, 3), dashT: 0, burnT: 0, burnAcc: 0, burnDps: 0 };
   a.maxHp = a.hp; G.ants.push(a); return a;
 }
@@ -1061,19 +1075,34 @@ function pickType() {
 
 // seconds each boss should last against your build's full damage output (real fights run longer, as you dodge)
 const BOSS_FIGHT = [20, 28, 35, 40, 48];
-// rough damage per second of the current build against a single big target
-function estDps(p) {
+const BOSS_HIT_CAP = 0.1; // no single hit can take more than this share of a boss's health, whatever the build
+// rough damage per second of the main gun against a single big target
+function gunDps(p) {
   const w = p.w, wp = p.weapon, crit = 1 + 2 * Math.min(1, w.crit || 0);
-  let d;
-  if (wp === 'gunner') d = w.dmg * w.rate * p.rateMul * (1 + w.spin) * (w.twin ? 2 : 1);
-  else if (wp === 'pistolier') d = w.dmg * w.rate * p.rateMul * (w.dual ? 2 : 1) * crit;
-  else if (wp === 'shotgun') d = w.dmg * w.pellets * w.rate * p.rateMul * 0.6;
-  else if (wp === 'sniper') d = w.dmg * w.rate * p.rateMul * w.multi * crit;
-  else if (wp === 'pyro') d = (w.dmg * p.rateMul + w.burn + (w.dragon ? w.dmg : 0)) * 0.35; // only part of the flame lands on a boss that moves around
-  else if (wp === 'bomb') d = w.dmg * w.rate * p.rateMul * (w.nades + w.cluster * 0.5) * 2; // big bosses catch most of the cluster bombs
-  else d = w.dmg * w.rate * p.rateMul;
-  return d * p.dmgMul + p.orbit * p.orbitDmg * 1.5;
+  if (wp === 'gunner') return w.dmg * w.rate * p.rateMul * (1 + w.spin) * (w.twin ? 2 : 1);
+  if (wp === 'pistolier') return w.dmg * w.rate * p.rateMul * (w.dual ? 2 : 1) * crit;
+  if (wp === 'shotgun') return w.dmg * w.pellets * w.rate * p.rateMul * 0.6;
+  if (wp === 'sniper') return w.dmg * w.rate * p.rateMul * w.multi * crit;
+  if (wp === 'pyro') return (w.dmg * p.rateMul + w.burn + (w.dragon ? w.dmg : 0)) * 0.35; // only part of the flame lands on a boss that moves around
+  if (wp === 'bomb') return w.dmg * w.rate * p.rateMul * (w.nades + w.cluster * 0.5) * 2; // big bosses catch most of the cluster bombs
+  return w.dmg * w.rate * p.rateMul;
 }
+// how hard the heavy weapon hits: it grows with the clock and with the gun's single-target damage. It must not
+// use the damage the gun has actually been dealing: a beam that pierces 50 ants counts 50 times, overkill and all.
+const heavyScale = p => Math.max(1 + G.t / 240, gunDps(p) * (p.weapon === 'pyro' ? 2.5 : 1) * HEAVY_K[p.sw] / 90);
+// rough damage per second of the heavy weapon against a single big target
+function heavyDps(p) {
+  if (!p.sw) return 0;
+  const w = p.s, tf = heavyScale(p);
+  if (p.sw === 'tesla') return w.dmg * tf * w.rate * w.bolts * 0.7;
+  if (p.sw === 'missiles') return w.dmg * tf * w.rate * Math.min(w.count, 5) * (1 + w.cluster * 0.2); // rockets spread over the toughest targets
+  if (p.sw === 'saw') return w.dmg * tf * w.rate * w.count * 1.2;
+  return w.dmg * tf * w.rate * w.shatter; // frost: the first blast chills the boss, so the rest count as cold
+}
+// rough damage per second of the whole build against a single big target
+function estDps(p) { return (gunDps(p) * (G.lap >= 1 && BOSS_REACH[p.weapon] || 1) + heavyDps(p)) * p.dmgMul * (1 + p.giant) + p.orbit * p.orbitDmg * 1.5; }
+// how much of a gun's fire actually gets through the crowd to a boss: bullets that stop at the first ant mostly don't
+const BOSS_REACH = { gunner: 0.45, pistolier: 0.4, shotgun: 0.6 };
 function spawnBoss() {
   const cycle = Math.floor(G.bossIdx / BOSS_ORDER.length), kind = (biomeAt(cycle).bosses || BOSS_ORDER)[G.bossIdx % BOSS_ORDER.length]; G.bossIdx++;
   const B = BOSSES[kind], p = G.p, ang = rand(0, 6.283), d = Math.min(VW, VH) * 0.3;
@@ -1114,12 +1143,15 @@ function burst(x, y, col, n, spd = 160, size = 3) {
     G.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(0.3, 0.7), max: 0.7, col, size: rand(size * 0.6, size * 1.4) }); }
 }
 // which line of the run summary each kind of damage counts towards
-const STAT_SRC = { burn: 'burn', strike: 'airstrike', orbit: 'orbit', drone: 'drone', boomerang: 'boomerang', tesla: 'heavy', missile: 'heavy', saw: 'heavy', frost: 'heavy' };
+const STAT_SRC = { burn: 'burn', strike: 'airstrike', orbit: 'orbit', drone: 'drone', boomerang: 'boomerang', tesla: 'heavy', missile: 'heavy', saw: 'heavy', frost: 'heavy', hat: 'hat', gas: 'gas' };
 function hitAnt(a, dmg, src) {
   if (a.proxy) a = a.proxy;
   if (a.dead || a.under) return;
   if (a.armor) dmg *= a.armor;
   dmg *= G.p.dmgMul * (G.p.rageT > 0 ? 2 : 1);
+  if (G.p.giant && (a.boss || a.elite)) dmg *= 1 + G.p.giant;
+  if (a === G.cursed) dmg *= 1.5;
+  if (a.boss) dmg = Math.min(dmg, a.maxHp * BOSS_HIT_CAP);
   if (a.shield > 0) { const s = Math.min(a.shield, dmg); a.shield -= s; dmg -= s; }
   if (a.shieldMax) a.shieldT = 0;
   a.hp -= dmg;
@@ -1129,6 +1161,13 @@ function hitAnt(a, dmg, src) {
   if (!quiet && SET.numbers && G.texts.length < 40 && Math.random() < 0.3) G.texts.push({ x: a.x + rand(-6, 6), y: a.y - a.r, txt: Math.round(dmg), life: 0.6 });
   if (a.hp <= 0) killAnt(a, src);
 }
+// Swamp Gas: a green puff that hurts everything close by (never sets off another puff, or one big kill would chain forever)
+function swampGas(x, y) {
+  G.gassing = true; const seen = new Set(), dmg = Math.max(20 + G.t * 0.25, gunDps(G.p) * 0.06);
+  near(x, y, 110, a => { if (a.dead || a.under) return; const t = a.proxy || a; if (seen.has(t) || (a.x - x) ** 2 + (a.y - y) ** 2 > 70 * 70) return; seen.add(t); hitAnt(t, dmg, 'gas'); });
+  G.gassing = false;
+  burst(x, y, '#9acd32', SET.low ? 4 : 10, 120, 5);
+}
 function killAnt(a, src) {
   a.dead = true; G.kills++; sfx.squish();
   if (state !== 'menu' && !a.proxy) { const k = a.boss ? 'boss:' + a.kind : a.type; prog.seen[k] = (prog.seen[k] || 0) + 1; } // for the bestiary (saved with the run)
@@ -1136,6 +1175,8 @@ function killAnt(a, src) {
   burst(a.x, a.y, a.col, a.boss ? 60 : 8, a.boss ? 320 : 150, a.boss ? 6 : 3);
   burst(a.x, a.y, a.metal ? '#cfd6dd' : '#24170e', a.boss ? 30 : 3, 90, 2);
   const p = G.p;
+  if (p.leech && ++G.leechN >= 40) { G.leechN = 0; const heal = Math.round(p.maxHp * 0.03 * p.leech); p.hp = Math.min(p.maxHp, p.hp + heal); G.texts.push({ x: p.x, y: p.y - 30, txt: '+' + heal, life: 1, heal: true }); }
+  if (p.gas && !a.boss && !G.gassing && Math.random() < 0.08 * p.gas) swampGas(a.x, a.y);
   // kills made by the airstrike itself, or during cooldown, don't recharge it
   if (src !== 'strike' && p.strikeCd <= 0) p.strike = Math.min(p.strikeNeed, p.strike + (a.boss ? p.strikeNeed : 1));
   if (a.boss) {
@@ -1154,7 +1195,7 @@ function killAnt(a, src) {
     G.flash = 0.6; G.flashCol = '255,255,255'; buzz([60, 40, 140]);
   } else {
     G.gems.push({ x: a.x, y: a.y, v: a.xp, spin: Math.random() * 6 });
-    if (Math.random() < 0.012) G.melons.push({ x: a.x, y: a.y });
+    if (Math.random() < (G.hat === 'chef' ? 0.024 : 0.012)) G.melons.push({ x: a.x, y: a.y });
     if (a.elite) {
       G.stats.elites++;
       G.chests.push({ x: a.x, y: a.y }); burst(a.x, a.y, ELITES[a.elite].col, 30, 260, 5); burst(a.x, a.y, '#ffd23a', 16, 200, 4);
@@ -1177,9 +1218,12 @@ function explode(x, y, rad, dmg, src, fire) {
   });
 }
 function damagePlayer(d, from) {
-  const p = G.p; if (state !== 'play') return;
+  const p = G.p; if (state !== 'play' || p.safeT > 0) return;
+  if (G.hat === 'tophat' && G.hatCd <= 0) { hatVanish(); return; }
   if (from) G.stats.killer = from;
-  d *= G.D.dmg; p.hp -= d; p.hurtT = 1.5; G.shake = Math.max(G.shake, 6); G.bossClean = false;
+  d *= G.D.dmg * p.armor;
+  if (G.hat === 'halo' && !G.hatUsed && p.hp - d <= 0) { hatRevive(); return; }
+  p.hp -= d; p.hurtT = 1.5; G.shake = Math.max(G.shake, 6); G.bossClean = false;
   if (p.inv <= 0) { p.inv = 0.2; sfx.hurt(); burst(p.x, p.y, '#e8503f', 6, 140, 3); buzz(35); }
   if (p.hp <= 0) { p.hp = 0; gameOver(); }
 }
@@ -1250,6 +1294,7 @@ function checkTips() {
   else if (!T.elite && G.ants.some(a => a.elite)) tip('elite', 'ELITE ANT!', 'Glowing ants are tough, but they drop a treasure chest with a free upgrade.');
   else if (!T.pickup && G.pickups.length) tip('pickup', 'POWER-UP NEARBY', 'Magnets pull in every seed, freeze bombs stop the ants and chillies double your damage.');
   else if (!T.sap && G.puddles.length) tip('sap', 'STICKY SAP', 'Orange puddles slow you right down. Walk around them.');
+  else if (!T.hat && G.hat !== 'none' && G.t > 20) tip('hat', 'YOUR HAT HAS A POWER', HATS.find(x => x.id === G.hat).perk + '. Swap hats in the Wardrobe.');
   else if (!T.evo && p.weapon !== 'pistol' && p.level >= 5) tip('evo', 'EVOLUTIONS', 'Every path can evolve into a super gun. The level-up and pause screens show what it needs.');
 }
 
@@ -1303,7 +1348,7 @@ function flameTick(want, gx, gy) {
 }
 
 /* ---------- level up ---------- */
-function closeLevelUp() { $('levelup').hidden = true; state = 'play'; last = performance.now(); }
+function closeLevelUp() { $('levelup').hidden = true; state = 'play'; last = performance.now(); if (G.hat === 'party') hatParty(); }
 function openLevelUp(src) {
   state = 'levelup'; sfx.level();
   const p = G.p, box = $('picks'); box.innerHTML = '';
@@ -1316,18 +1361,18 @@ function openLevelUp(src) {
   const evoReady = evo && !p.evo && (p.wlv[evo.key] || 0) >= key.max && (p.upg[evo.gen] || 0) >= 1;
   const tip = $('evoTip'); tip.hidden = !evo || !!p.evo || evoReady;
   if (!tip.hidden) tip.textContent = `Evolution: max out ${key.name} (${p.wlv[evo.key] || 0} of ${key.max}) and take ${gen.name}${p.upg[evo.gen] ? ' (done)' : ''} to unlock ${evo.name}.`;
-  const wpool = path.upg.filter(u => (p.wlv[u.id] || 0) < u.max && !G.banned.includes('w:' + u.id)).map(u => ({ ...u, weapon: true }));
+  const wpool = path.upg.filter(u => (p.wlv[u.id] || 0) < maxOf(u) && !G.banned.includes('w:' + u.id)).map(u => ({ ...u, weapon: true }));
   // sidekicks turn up from level 10, and once you have one only that one is offered
-  const gpool = GENERAL.filter(u => (p.upg[u.id] || 0) < u.max && !G.banned.includes('g:' + u.id) && (!u.side || (p.level >= 10 && (!p.side || p.side === u.id))));
+  const gpool = GENERAL.filter(u => (p.upg[u.id] || 0) < u.max && !G.banned.includes('g:' + u.id) && (!u.from || G.lap >= u.from) && (!u.side || (p.level >= 10 && (!p.side || p.side === u.id))));
   const take = arr => arr.length ? arr.splice(Math.floor(Math.random() * arr.length), 1)[0] : null;
   const S = p.sw && SUPERS[p.sw];
-  const spool = S ? S.upg.filter(u => (p.swlv[u.id] || 0) < u.max && !G.banned.includes('s:' + u.id)).map(u => ({ ...u, sup: true })) : [];
+  const spool = S ? S.upg.filter(u => (p.swlv[u.id] || 0) < maxOf(u) && !G.banned.includes('s:' + u.id)).map(u => ({ ...u, sup: true })) : [];
   const swEvoReady = S && !p.swEvo && (p.swlv[S.evo.key] || 0) >= S.upg.find(u => u.id === S.evo.key).max;
   const choices = (spool.length ? [take(wpool), take(spool), take(gpool)] : [take(wpool), take(wpool), take(gpool)]).filter(Boolean);
   while (choices.length < 3 && spool.length) choices.push(take(spool));
   while (choices.length < 3 && (wpool.length || gpool.length)) choices.push(take(wpool.length ? wpool : gpool));
   if (!choices.length && !evoReady && !swEvoReady) { // everything is maxed: heal to full on the spot rather than pausing for a one-option menu
-    $('levelup').hidden = true; state = 'play'; p.hp = p.maxHp; sfx.eat();
+    $('levelup').hidden = true; state = 'play'; p.hp = p.maxHp; sfx.eat(); if (G.hat === 'party') hatParty();
     G.texts.push({ x: p.x, y: p.y - 40, txt: chest ? 'TREASURE: FULL HEAL!' : 'FULL HEAL!', life: 1.4, heal: true }); burst(p.x, p.y, '#7dff7a', 14, 160, 4);
     return;
   }
@@ -1338,7 +1383,7 @@ function openLevelUp(src) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pick' + (u.id === 'evo' || u.id === 'swevo' ? ' evo' : ''); b.id = 'pick' + i;
     const lv = (u.weapon ? p.wlv[u.id] : u.sup ? p.swlv[u.id] : p.upg[u.id]) || 0;
     const ico = u.id === 'evo' || u.id === 'swevo' ? '<span class="ico">\u2605</span>' : u.weapon ? `<span class="ico">${path.badge}</span>` : u.sup ? `<span class="ico sup">${S.badge}</span>` : `<span class="ico gen">${u.ico}</span>`;
-    b.innerHTML = `${ico}<span><strong>${u.name}</strong><small>${u.desc}${u.id !== 'heal' && u.id !== 'evo' && u.id !== 'swevo' ? ` \u00b7 level ${lv + 1} of ${u.max}` : ''}</small></span><kbd>${i + 1}</kbd>`;
+    b.innerHTML = `${ico}<span><strong>${u.name}</strong><small>${u.desc}${u.id !== 'heal' && u.id !== 'evo' && u.id !== 'swevo' ? ` \u00b7 level ${lv + 1} of ${maxOf(u)}` : ''}</small></span><kbd>${i + 1}</kbd>`;
     b.onclick = () => {
       if (G.banishing && !['evo', 'swevo', 'heal'].includes(u.id)) { // binned: never offered again this run
         G.banned.push((u.weapon ? 'w:' : u.sup ? 's:' : 'g:') + u.id); gc('banish/' + u.id); G.banishes--; G.banishing = false; sfx.hurt(); openLevelUp(src); return;
@@ -1402,12 +1447,110 @@ function openSuperChoice() {
   setTimeout(() => { const f = $('pick0'); if (f) f.focus({ preventScroll: true }); }, 50);
 }
 // the heavy weapon fires on its own timer; its damage grows with the run like the sidekicks' does
+/* ---------- hat powers ---------- */
+// every hat does something of its own, automatically (no extra button on a phone). Damage follows the gun so a hat stays useful all run.
+const hatHit = k => Math.max(18 + G.t * 0.25, gunDps(G.p) * 0.12) * k;
+const HAT_CD = { orange: 10, cowboy: 6, pirate: 75, viking: 20, propeller: 18, wizard: 12, samurai: 7, antennae: 15 };
+function nearestFoes(n, rad) {
+  const p = G.p, seen = new Set(), out = [];
+  near(p.x, p.y, rad, a => { if (a.dead || a.under || (a.alt || 0) > 25) return; const t = a.proxy || a; if (seen.has(t)) return; seen.add(t); out.push(t); });
+  return out.sort((x, y) => ((x.x - p.x) ** 2 + (x.y - p.y) ** 2) - ((y.x - p.x) ** 2 + (y.y - p.y) ** 2)).slice(0, n);
+}
+const hatSay = txt => G.texts.push({ x: G.p.x, y: G.p.y - 54, txt, life: 1.1, crit: true });
+function hatCast(hat) {
+  const p = G.p;
+  if (hat === 'orange') { if (G.mines.length < 5) { G.mines.push({ x: p.x, y: p.y, life: 14 }); tone(420, 0.1, 'sine', 0.04, 200); } return true; }
+  if (hat === 'cowboy') {
+    const foes = nearestFoes(6, 520); if (!foes.length) return false;
+    for (let i = 0; i < 6; i++) { const t = foes[i % foes.length]; later(i * 40, () => { if (G && G.p === p && state === 'play' && !t.dead) { addBullet(p.x, p.y - 8, Math.atan2(t.y - p.y, t.x - p.x), 1000, 620, { dmg: hatHit(1), pierce: 1, src: 'hat' }); sfx.shoot(); } }); }
+    return true;
+  }
+  if (hat === 'pirate') { if (G.xmark) return false; const a = rand(0, 6.283), d = rand(170, 260); G.xmark = { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, life: 30 }; G.banner = { txt: 'X MARKS THE SPOT!', life: 1.6 }; return true; }
+  if (hat === 'viking') {
+    for (const t of nearestFoes(200, 340)) { if (!t.boss) { const d = Math.hypot(t.x - p.x, t.y - p.y) || 1; t.x += (t.x - p.x) / d * 120; t.y += (t.y - p.y) / d * 120; t.frozen = Math.max(t.frozen || 0, 0.7); } }
+    G.parts.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.4, max: 0.4, ring: 320 }); tone(110, 0.55, 'sawtooth', 0.09, 40); G.shake = Math.max(G.shake, 8); hatSay('WAR HORN!'); return true;
+  }
+  if (hat === 'propeller') { G.hatFly = 3; p.safeT = Math.max(p.safeT, 3); tone(300, 0.5, 'sawtooth', 0.04, 500); hatSay('LIFT OFF!'); return true; }
+  if (hat === 'wizard') {
+    const spell = Math.floor(Math.random() * 3);
+    if (spell === 0) { const t = G.boss && !G.boss.dead && !G.boss.under ? G.boss : nearestFoes(30, 520).sort((a, b) => b.hp - a.hp)[0]; if (!t) return false; explode(t.x, t.y, 130, hatHit(5), 'hat'); hatSay('METEOR!'); }
+    else if (spell === 1) { for (const t of nearestFoes(200, 380)) { t.chill = Math.max(t.chill || 0, 2); if (!t.boss) t.frozen = Math.max(t.frozen || 0, 1.2); } G.parts.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.4, max: 0.4, ring: 360 }); tone(1200, 0.25, 'sine', 0.04, -700); hatSay('FROST NOVA!'); }
+    else { const heal = Math.round(p.maxHp * 0.12); p.hp = Math.min(p.maxHp, p.hp + heal); G.texts.push({ x: p.x, y: p.y - 30, txt: '+' + heal, life: 1, heal: true }); sfx.eat(); hatSay('HEALING LIGHT!'); }
+    return true;
+  }
+  if (hat === 'samurai') {
+    const c = Math.cos(p.aim), s = Math.sin(p.aim), len = 460, half = 46, seen = new Set();
+    for (const a of G.ants) { if (a.dead || a.under || (a.alt || 0) > 25) continue; const t = a.proxy || a; if (seen.has(t)) continue; const dx = a.x - p.x, dy = a.y - p.y, along = dx * c + dy * s; if (along < 0 || along > len || Math.abs(-dx * s + dy * c) > half + (a.r || 0)) continue; seen.add(t); hitAnt(t, hatHit(4), 'hat'); }
+    G.slashes.push({ x1: p.x, y1: p.y - 8, x2: p.x + c * len, y2: p.y - 8 + s * len, life: 0.24 }); noise(0.14, 0.14, 5000); return true;
+  }
+  if (hat === 'antennae') { const foes = nearestFoes(12, 360).filter(t => !t.boss).slice(0, 8); if (!foes.length) return false; for (const t of foes) t.charm = 6; tone(660, 0.2, 'triangle', 0.05, 300); hatSay('HIVE MIND!'); return true; }
+  return false;
+}
+function hatTick(dt) {
+  const p = G.p, hat = G.hat;
+  G.hatCd = Math.max(0, G.hatCd - dt); G.vicT = Math.max(0, G.vicT - dt); G.hatFly = Math.max(0, G.hatFly - dt);
+  if (G.hatCd <= 0 && HAT_CD[hat]) G.hatCd = hatCast(hat) ? HAT_CD[hat] : 1;
+  for (const m of G.mines) {
+    m.life -= dt; let go = m.life <= 0;
+    if (!go) near(m.x, m.y, 44, a => { if (!a.dead && !a.under && (a.alt || 0) <= 25 && (a.x - m.x) ** 2 + (a.y - m.y) ** 2 < (a.r + 12) ** 2) go = true; });
+    if (go) { m.dead = true; explode(m.x, m.y, 100, hatHit(2.5), 'hat'); }
+  }
+  G.mines = G.mines.filter(m => !m.dead);
+  if (G.xmark) { const x = G.xmark; x.life -= dt; if ((p.x - x.x) ** 2 + (p.y - x.y) ** 2 < (p.r + 24) ** 2) { G.chests.push({ x: x.x, y: x.y }); G.xmark = null; } else if (x.life <= 0) G.xmark = null; }
+  if (hat === 'horns') {
+    if (p.moving && (G.fireT -= dt) <= 0) { G.fireT = 0.14; G.fires.push({ x: p.x, y: p.y + 12, life: 2.2 }); if (G.fires.length > (SET.low ? 12 : 24)) G.fires.shift(); }
+    for (const f of G.fires) f.life -= dt;
+    G.fires = G.fires.filter(f => f.life > 0);
+    if ((G.fireTick -= dt) <= 0) { G.fireTick = 0.25; const dps = hatHit(0.5); for (const f of G.fires) near(f.x, f.y, 60, a => { if (a.dead || a.under || (a.alt || 0) > 25 || (a.x - f.x) ** 2 + (a.y - f.y) ** 2 > (a.r + 20) ** 2) return; const t = a.proxy || a; t.burnT = 2; t.burnDps = Math.max(t.burnDps || 0, dps); }); }
+  }
+  if (hat === 'nemes' && (!G.cursed || G.cursed.dead) && (G.curseCd -= dt) <= 0) { G.curseCd = 0.5; G.cursed = (G.boss && !G.boss.dead && !G.boss.under) ? G.boss : (nearestFoes(30, 520).sort((a, b) => b.hp - a.hp)[0] || null); }
+  for (const s of G.slashes) s.life -= dt;
+  G.slashes = G.slashes.filter(s => s.life > 0);
+}
+// Top Hat: dodge the bite, puff of smoke, reappear away from the crowd with everything close stunned
+function hatVanish() {
+  const p = G.p, foes = nearestFoes(12, 200); let dx = 0, dy = 0;
+  for (const t of foes) { dx += p.x - t.x; dy += p.y - t.y; if (!t.boss) t.frozen = Math.max(t.frozen || 0, 1); }
+  const a = dx || dy ? Math.atan2(dy, dx) : rand(0, 6.283);
+  burst(p.x, p.y, '#b9a7d9', SET.low ? 8 : 20, 200, 6);
+  p.x += Math.cos(a) * 170; p.y += Math.sin(a) * 170; p.safeT = 0.8; G.hatCd = 15;
+  burst(p.x, p.y, '#b9a7d9', SET.low ? 8 : 20, 200, 6); tone(880, 0.18, 'sine', 0.05, -500); hatSay('NOW YOU SEE ME!');
+}
+// Halo: a fatal hit brings you back once a run
+function hatRevive() {
+  const p = G.p; G.hatUsed = true; p.hp = p.maxHp; p.safeT = 2.5; G.banner = { txt: 'GUARDIAN ANGEL!', life: 2.2 }; G.flash = 0.6; G.flashCol = '255,245,190';
+  for (const t of nearestFoes(200, 340)) { if (!t.boss) { const d = Math.hypot(t.x - p.x, t.y - p.y) || 1; t.x += (t.x - p.x) / d * 140; t.y += (t.y - p.y) / d * 140; t.frozen = Math.max(t.frozen || 0, 1.2); } }
+  G.parts.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.5, max: 0.5, ring: 340 }); tone(990, 0.5, 'sine', 0.07, 400);
+}
+// Party Hat: every upgrade pops
+function hatParty() {
+  const p = G.p;
+  for (const t of nearestFoes(120, 280)) { hitAnt(t, hatHit(3), 'hat'); if (!t.boss && !t.dead) { const d = Math.hypot(t.x - p.x, t.y - p.y) || 1; t.x += (t.x - p.x) / d * 90; t.y += (t.y - p.y) / d * 90; } }
+  for (const col of ['#ff5a8a', '#ffd23a', '#4ad8ff', '#a6f03c']) burst(p.x, p.y, col, SET.low ? 5 : 14, 340, 4);
+  tone(740, 0.12, 'square', 0.05, 500);
+}
+// Antennae: a turned enemy goes after its old friends instead of you
+function charmStep(a, dt) {
+  let t = null, bd = 300 * 300;
+  near(a.x, a.y, 300, b => { if (b === a || b.dead || b.under || b.proxy || b.charm > 0) return; const dd = (b.x - a.x) ** 2 + (b.y - a.y) ** 2; if (dd < bd) { bd = dd; t = b; } });
+  a.walk += dt * a.spd * 0.22; a.biteCd -= dt;
+  if (!t) return;
+  const d = Math.sqrt(bd) || 1, tx = (t.x - a.x) / d, ty = (t.y - a.y) / d;
+  if (d > a.r + t.r) { a.x += tx * a.spd * dt; a.y += ty * a.spd * dt; a.a = turnTo(a.a, Math.atan2(ty, tx), dt * 8); }
+  else if (a.biteCd <= 0) { a.biteCd = 0.5; hitAnt(t, hatHit(1.2), 'hat'); }
+}
+function drawHatFx() {
+  if (G.hat === 'none') return;
+  for (const m of G.mines) drawOrange(m.x, m.y);
+  if (G.xmark) { const x = G.xmark, s = 13 + Math.sin(G.t * 6) * 2; ctx.strokeStyle = '#e8303a'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x.x - s, x.y - s); ctx.lineTo(x.x + s, x.y + s); ctx.moveTo(x.x + s, x.y - s); ctx.lineTo(x.x - s, x.y + s); ctx.stroke(); }
+  if (G.fires.length) { ctx.globalCompositeOperation = 'lighter'; for (const f of G.fires) { const k = Math.min(1, f.life / 0.5), r = 15 + 7 * k; ctx.globalAlpha = 0.85 * k; ctx.drawImage(FLAME_SPR[f.life > 1.4 ? 1 : 2], f.x - r, f.y - r, r * 2, r * 2); } ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+  for (const s of G.slashes) { const k = s.life / 0.24; ctx.strokeStyle = `rgba(255,255,255,${k})`; ctx.lineWidth = 10 * k + 1; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); }
+  if (G.cursed && !G.cursed.dead && !G.cursed.under) { const c = G.cursed, r = (c.r || 12) + 9 + Math.sin(G.t * 5) * 2; ctx.strokeStyle = 'rgba(190,90,255,0.9)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, 6.283); ctx.stroke(); }
+  if (G.hat === 'antennae') { ctx.strokeStyle = 'rgba(166,240,60,0.85)'; ctx.lineWidth = 2.5; for (const a of G.ants) if (a.charm > 0) { ctx.beginPath(); ctx.arc(a.x, a.y, a.r + 6, 0, 6.283); ctx.stroke(); } }
+}
 function updateSuper(dt) {
-  // damage is scaled from what your main gun has actually been dealing lately, so the heavy weapon
-  // keeps pulling its weight (about 40% of the gun) however strong the build gets
-  const gunNow = (G.stats.dmg.gun || 0) + (G.stats.dmg.burn || 0);
-  if ((G.gunT = (G.gunT || 0) + dt) >= 1) { G.gunRate = (G.gunRate || 0) * 0.85 + (gunNow - (G.gunPrev || 0)) / G.gunT * 0.15; G.gunPrev = gunNow; G.gunT = 0; }
-  const p = G.p, w = p.s, tf = Math.max(1 + G.t / 240, (G.gunRate || 0) * HEAVY_K / 90);
+  // damage is scaled to your main gun (see heavyScale), so the heavy weapon keeps pulling its weight however strong the build gets
+  const p = G.p, w = p.s, tf = heavyScale(p);
   for (const z of G.zaps) z.life -= dt;
   for (const f of G.frosts) f.t += dt;
   if (w && (G.swCd -= dt) <= 0) {
@@ -1825,7 +1968,7 @@ function bossUpdate(b, dt, p, dx, dy, d) {
 const BIOMES = [
   { name: 'The Meadow' },
   { name: 'Scorched Dunes', sub: 'The sun is hot and the ants are tougher.', art: 'dunes', bosses: ['pharaoh', 'scorpion', 'worm', 'dillo', 'sphinx'], lite: 'rgba(255,240,190,0.07)', shade: 'rgba(120,70,20,0.08)' },
-  { name: 'Midnight Swamp', sub: 'It is dark, and the swarm is even nastier.', art: 'swamp', bosses: ['leech', 'toad', 'skeeter', 'shroom', 'octo'], lite: 'rgba(120,200,150,0.05)', shade: 'rgba(0,15,20,0.14)', dark: 0.42 }
+  { name: 'Midnight Swamp', sub: 'It is dark, and the swarm is nastier. New upgrades unlocked.', art: 'swamp', bosses: ['leech', 'toad', 'skeeter', 'shroom', 'octo'], lite: 'rgba(120,200,150,0.05)', shade: 'rgba(0,15,20,0.14)', dark: 0.42 }
 ];
 // after the Swamp comes the Gauntlet: every lap brings back five old bosses, all of them enraged from the start
 const GAUNT = { open: ['queen', 'pharaoh', 'leech'], mid: ['caiman', 'scorpion', 'toad', 'harpy', 'worm', 'skeeter', 'anaconda', 'dillo', 'shroom'], close: ['mecha', 'sphinx', 'octo'] }, gauntlets = {};
@@ -1922,6 +2065,8 @@ function updateDeath(dt) {
     G.parts.push({ x: b.x, y: b.y, vx: 0, vy: 0, life: 0.6, max: 0.6, ring: 220 });
     for (let i = 0; i < 30; i++) { const a = rand(0, 6.283), r = rand(20, 90); G.gems.push({ x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r, v: 3, spin: Math.random() * 6 }); }
     G.melons.push({ x: b.x - 20, y: b.y }, { x: b.x + 20, y: b.y + 10 });
+    if (G.hat === 'crown') G.chests.push({ x: b.x, y: b.y + 34 });
+    if (G.hat === 'laurel') { G.p.hp = G.p.maxHp; G.vicT = 20; G.texts.push({ x: G.p.x, y: G.p.y - 54, txt: 'VICTORY LAP!', life: 1.6, crit: true }); }
     G.banner = { txt: BOSSES[b.kind].name + ' DEFEATED!', life: 2.8 };
     if (BOSSES[b.kind].closer) { // a full lap of bosses: on to the next area
       G.lap++; G.bioK = 0; const bio = biomeNow();
@@ -2011,11 +2156,12 @@ function update(dt) {
   if (joy.on) { const dx = joy.x - joy.ox, dy = joy.y - joy.oy, d = Math.hypot(dx, dy); if (d > 8) { const k = Math.min(1, d / 50); mx = dx / d * k; my = dy / d * k; } }
   const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
   // sticky sap slows you right down
-  p.slowed = G.puddles.some(s => s.t > 0.6 && s.t < s.life - 0.6 && (p.x - s.x) ** 2 + ((p.y - s.y) / 0.72) ** 2 < s.r * s.r * 0.8);
+  p.slowed = !(G.hatFly > 0) && G.puddles.some(s => s.t > 0.6 && s.t < s.life - 0.6 && (p.x - s.x) ** 2 + ((p.y - s.y) / 0.72) ** 2 < s.r * s.r * 0.8);
   const slow = p.slowed ? 0.5 : 1;
   p.x += mx * p.speed * slow * dt; p.y += my * p.speed * slow * dt;
   p.rageT = Math.max(0, p.rageT - dt);
   p.moving = ml > 0.05; if (p.moving) p.walk += dt * 14;
+  p.safeT = Math.max(0, p.safeT - dt);
   p.inv = Math.max(0, p.inv - dt); p.flash = Math.max(0, p.flash - dt); p.flash2 = Math.max(0, p.flash2 - dt); p.strikeCd = Math.max(0, p.strikeCd - dt);
   p.hurtT = Math.max(0, p.hurtT - dt);
   // healing scales with max health, and slows to half speed (rather than stopping) for a moment after a bite
@@ -2109,6 +2255,7 @@ function update(dt) {
     if (a.burnT > 0) { a.burnT -= dt; a.burnAcc += a.burnDps * dt; if (a.burnAcc >= 2) { const d = a.burnAcc; a.burnAcc = 0; hitAnt(a, d, 'burn'); if (a.dead) continue; } }
     if (a.chill > 0) a.chill -= dt;
     if (a.frozen > 0) { a.frozen -= dt; continue; } // frozen solid: no moving, no biting
+    if (a.charm > 0) { a.charm -= dt; charmStep(a, dt); continue; } // turned by the Antennae hat
     const dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy) || 1;
     if (a.boss) { bossUpdate(a, dt, p, dx, dy, d); bite(a, p, dt); continue; }
     let tx = dx / d, ty = dy / d, spd = a.chill > 0 ? a.spd * 0.45 : a.spd;
@@ -2163,7 +2310,7 @@ function update(dt) {
     // in a crowd the boss is hardly ever the nearest thing, so it barely got shot: aim at a boss in range
     // unless something is close enough to bite
     const bz = G.boss;
-    if (bz && !bz.dead && !bz.under && target && (target.proxy || target) !== bz && best > 120 * 120 && Math.hypot(bz.x - p.x, bz.y - p.y) - bz.r < w.range) target = bz;
+    if (bz && !bz.dead && !bz.under && target && (target.proxy || target) !== bz && best > (G.lap ? 55 * 55 : 120 * 120) && Math.hypot(bz.x - p.x, bz.y - p.y) - bz.r < w.range) target = bz;
   }
   if (wp === 'gunner' && !target) p.spinT = Math.max(0, p.spinT - dt * 2);
   if (target) {
@@ -2315,18 +2462,20 @@ function update(dt) {
   // airstrikes
   for (const s of G.strikes) { s.t -= dt; if (s.t <= 0 && !s.dead) { s.dead = true; explode(s.x, s.y, 110, 260 + G.t * 1.5, 'strike'); } }
 
+  if (G.hat !== 'none') hatTick(dt);
+
   // gems + melons
   const mag2 = p.magnet * p.magnet;
   for (const g of G.gems) {
     const dx = p.x - g.x, dy = p.y - g.y, dd = dx * dx + dy * dy;
     if (dd < mag2 || g.pull) { g.pull = true; const d = Math.sqrt(dd) || 1, s = g.fast ? 900 : 420; g.x += dx / d * s * dt; g.y += dy / d * s * dt; }
-    if (dd < (p.r + 6) ** 2) { g.dead = true; p.xp += g.v * p.xpMul; sfx.gem(); }
+    if (dd < (p.r + 6) ** 2) { g.dead = true; p.xp += g.v * p.xpMul * (G.vicT > 0 ? 2 : 1); sfx.gem(); }
     g.spin += dt * 3;
   }
   for (const m of G.melons) {
     const dx = p.x - m.x, dy = p.y - m.y, dd = dx * dx + dy * dy;
     if (dd < mag2 || m.pull) { m.pull = true; const d = Math.sqrt(dd) || 1, s = m.fast ? 900 : 420; m.x += dx / d * s * dt; m.y += dy / d * s * dt; }
-    if ((p.x - m.x) ** 2 + (p.y - m.y) ** 2 < (p.r + 14) ** 2) { m.dead = true; p.hp = Math.min(p.maxHp, p.hp + 30); sfx.eat(); G.texts.push({ x: p.x, y: p.y - 30, txt: '+30', life: 1, heal: true }); }
+    if ((p.x - m.x) ** 2 + (p.y - m.y) ** 2 < (p.r + 14) ** 2) { m.dead = true; p.hp = Math.min(p.maxHp, p.hp + 30); sfx.eat(); G.texts.push({ x: p.x, y: p.y - 30, txt: '+30', life: 1, heal: true }); if (G.hat === 'chef') { p.rageT = Math.max(p.rageT, 5); hatSay('ORDER UP!'); } }
   }
   for (const c of G.chests) {
     if (state === 'play' && (p.x - c.x) ** 2 + (p.y - c.y) ** 2 < (p.r + 20) ** 2) { c.dead = true; G.chestsOpened++; buzz(30); burst(c.x, c.y, '#ffd23a', 24, 220, 4); openLevelUp('chest'); }
@@ -2643,12 +2792,13 @@ function drawCapy() {
   const p = G.p, face = p.face || 1;
   const step = p.moving ? Math.sin(p.walk) : 0, bob = p.moving ? -Math.abs(step) * 3 : Math.sin(G.t * 3) * 0.6;
   if (p.inv > 0 && Math.floor(p.inv * 30) % 2) ctx.globalAlpha = 0.5;
-  ctx.save(); ctx.translate(p.x, p.y);
+  const lift = G.hatFly > 0 ? Math.min(1, G.hatFly * 3, (3 - G.hatFly) * 3) * 30 : 0; // Propeller hat
+  ctx.save(); ctx.translate(p.x, p.y - lift);
   if (p.rageT > 0) { // rage: a hot red glow, flickering faster as it runs out
     const g = ctx.createRadialGradient(0, -10, 6, 0, -10, 52); g.addColorStop(0, `rgba(255,60,30,${0.45 + 0.15 * Math.sin(G.t * (p.rageT < 3 ? 30 : 12))})`); g.addColorStop(1, 'rgba(255,60,30,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -10, 52, 0, 6.283); ctx.fill();
   }
-  ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(0, 18, 17, 5, 0, 0, 6.283); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(0, 18 + lift, 17, 5, 0, 0, 6.283); ctx.fill();
   // waddle: rock side to side around the feet while walking
   ctx.save(); ctx.translate(0, 18); ctx.rotate(step * 0.07); ctx.scale(face, 1);
   // akimbo: the second pistol sits in the far paw, so it is drawn behind the body
@@ -2689,22 +2839,22 @@ const SKINS = [
 ];
 const HATS = [
   { id: 'none',      name: 'No hat' },
-  { id: 'orange',    name: 'Orange' },
-  { id: 'cowboy',    name: 'Cowboy' },
-  { id: 'tophat',    name: 'Top Hat' },
-  { id: 'pirate',    name: 'Pirate' },
-  { id: 'party',     name: 'Party' },
-  { id: 'viking',    name: 'Viking' },
-  { id: 'propeller', name: 'Propeller' },
-  { id: 'crown',     name: 'Crown', need: ['bosses', 1] },
-  { id: 'halo',      name: 'Halo',        need: ['ach', 'flawless'] },
-  { id: 'wizard',    name: 'Wizard',      need: ['ach', 'allpaths'] },
-  { id: 'chef',      name: 'Chef',        need: ['ach', 'evolve'] },
-  { id: 'horns',     name: 'Devil Horns', need: ['ach', 'nightmare'] },
-  { id: 'nemes',     name: 'Pharaoh',     need: ['bosses', 40] },
-  { id: 'samurai',   name: 'Samurai',     need: ['ach', 'allbosses'] },
-  { id: 'laurel',    name: 'Laurels',     need: ['ach', 'gauntlet'] },
-  { id: 'antennae',  name: 'Antennae',    need: ['ach', 'antlord'] }
+  { id: 'orange',    name: 'Orange', perk: 'Rolls out orange bombs that burst on contact' },
+  { id: 'cowboy',    name: 'Cowboy', perk: 'Fans six shots at the nearest enemies every 6s' },
+  { id: 'tophat',    name: 'Top Hat', perk: 'Dodges a bite every 15s by vanishing in smoke' },
+  { id: 'pirate',    name: 'Pirate', perk: 'X marks buried treasure: reach it for a chest' },
+  { id: 'party',     name: 'Party', perk: 'Every upgrade sets off a confetti blast' },
+  { id: 'viking',    name: 'Viking', perk: 'War horn knocks back and stuns the crowd every 20s' },
+  { id: 'propeller', name: 'Propeller', perk: 'Lift off every 18s: nothing can touch you for 3s' },
+  { id: 'crown',     name: 'Crown', need: ['bosses', 1], perk: 'Every boss you beat drops a free chest' },
+  { id: 'halo',      name: 'Halo',        need: ['ach', 'flawless'], perk: 'Brings you back from death once a run' },
+  { id: 'wizard',    name: 'Wizard',      need: ['ach', 'allpaths'], perk: 'Casts a random spell every 12s' },
+  { id: 'chef',      name: 'Chef',        need: ['ach', 'evolve'], perk: 'Twice the melons, and each one fires you up' },
+  { id: 'horns',     name: 'Devil Horns', need: ['ach', 'nightmare'], perk: 'Leaves a trail of fire as you run' },
+  { id: 'nemes',     name: 'Pharaoh',     need: ['bosses', 40], perk: 'Curses the toughest enemy: it takes +50% damage' },
+  { id: 'samurai',   name: 'Samurai',     need: ['ach', 'allbosses'], perk: 'A long sword cut through everything every 7s' },
+  { id: 'laurel',    name: 'Laurels',     need: ['ach', 'gauntlet'], perk: 'Beating a boss heals you and doubles seeds for 20s' },
+  { id: 'antennae',  name: 'Antennae',    need: ['ach', 'antlord'], perk: 'Turns the nearest enemies to your side for 6s' }
 ];
 // achievements: each one unlocks a hat or a skin
 const ACH = [
@@ -2733,7 +2883,7 @@ function needText(it) {
       (A.id === 'allbosses' ? ` (${Object.keys(BOSSES).filter(k => prog.beaten[k]).length} of 15 so far)` : '');
   }
   const [k, n] = it.need, have = Math.min(prog[k], n);
-  if (k === 'kills') return `Squish ${n.toLocaleString()} ants in total (${have.toLocaleString()} so far)`;
+  if (k === 'kills') return `Defeat ${n.toLocaleString()} enemies in total (${have.toLocaleString()} so far)`;
   if (k === 'bosses') return `Beat ${n} boss${n > 1 ? 'es' : ''} in total (${have} so far)`;
   return `Survive ${fmt(n)} in one run (best ${fmt(have)})`;
 }
@@ -2768,7 +2918,9 @@ function buildWardrobe(peek) {
   const sk = SKINS.find(s => s.id === prog.skin) || SKINS[0], show = peek && !isUnlocked(peek) ? peek : sk;
   $('wName').textContent = show.name;
   $('wPerk').textContent = show === peek && !isUnlocked(peek) ? (peek.perk ? peek.perk + '. Locked: ' : 'Locked: ') + needText(peek) : (sk.perk ? 'Bonus: ' + sk.perk : 'Just for looks. Unlock more skins for stat bonuses.');
-  $('wStats').textContent = `Lifetime: ${prog.kills.toLocaleString()} ants \u00b7 ${prog.bosses} bosses \u00b7 best run ${fmt(prog.best)} \u00b7 achievements ${ACH.filter(a => prog.ach[a.id]).length} of ${ACH.length}`;
+  const hw = peek && HATS.includes(peek) ? peek : HATS.find(x => x.id === prog.hat) || HATS[0];
+  $('wHatPerk').textContent = hw.perk ? `${hw.name} hat: ${hw.perk}` : 'No hat, no power. Each hat has its own special ability.';
+  $('wStats').textContent = `Lifetime: ${prog.kills.toLocaleString()} enemies defeated \u00b7 ${prog.bosses} bosses \u00b7 best run ${fmt(prog.best)} \u00b7 achievements ${ACH.filter(a => prog.ach[a.id]).length} of ${ACH.length}`;
   const g = $('wPreview').getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 240, 240);
   g.setTransform(2.7, 0, 0, 2.7, 120, 222); paintCapy(g, show === peek ? (SKINS.includes(peek) ? peek.id : prog.skin) : prog.skin, HATS.includes(peek) ? peek.id : prog.hat, 0);
 }
@@ -3270,6 +3422,7 @@ function draw() {
     ctx.restore();
   }
   drawSuper();
+  drawHatFx();
   for (const b of bosses) if (FLIERS.has(b.kind)) drawBoss(b, k, ox, oy); // fliers draw over everything on the ground
   if (G.death && FLIERS.has(G.death.b.kind)) { drawDeath(k, ox, oy); ctx.setTransform(k, 0, 0, k, ox, oy); }
   if (p.orbit) for (let i = 0; i < p.orbit; i++) { const ang = G.orbA + i * Math.PI * 2 / p.orbit; drawOrange(p.x + Math.cos(ang) * 72, p.y + Math.sin(ang) * 72); }
@@ -3445,7 +3598,7 @@ function hud() {
   const bt = [p.rageT > 0 ? `RAGE x2 ${Math.ceil(p.rageT)}s` : '', p.slowed ? 'STUCK IN SAP' : ''].filter(Boolean).join(' \u00b7 ');
   if ($('buffTxt').textContent !== bt) $('buffTxt').textContent = bt;
   $('clock').firstChild.nodeValue = fmt(G.t);
-  $('kills').textContent = `${G.kills} ants`;
+  $('kills').textContent = `${G.kills.toLocaleString()} Enemies Defeated`;
   const sb = $('strikeBtn'), cooling = p.strikeCd > 0;
   const f = cooling ? 1 - p.strikeCd / p.strikeCdMax : p.strike / p.strikeNeed;
   const txt = cooling ? `RELOAD<br>${Math.ceil(p.strikeCd)}s` : f >= 1 ? 'CALL<br>CHOPPER' : 'AIR<br>STRIKE';
@@ -3461,6 +3614,7 @@ function start(mode) {
   mode = mode || prog.diff; if (mode === 'nightmare' && !nightmareOpen()) mode = 'normal';
   const D = G.D = rulesFor(mode); G.mode = mode; G.nextBoss = D.bossGap; gc('run-start/' + mode);
   G.unlocked0 = SKINS.concat(HATS).filter(isUnlocked);
+  const hatOn = HATS.find(x => x.id === prog.hat && isUnlocked(x)); G.hat = hatOn ? hatOn.id : 'none'; G.hatCd = (HAT_CD[G.hat] || 0) * 0.5;
   // unlocked skins carry a stat bonus
   const worn = SKINS.find(s => s.id === prog.skin && isUnlocked(s)) || SKINS[0], bn = worn.bonus || {}, p = G.p;
   p.dmgMul = (1 + (bn.dmg || 0)) * D.pdmg; p.rateMul = 1 + (bn.rate || 0); p.xpMul = (1 + (bn.xp || 0)) * D.xp;
@@ -3502,7 +3656,7 @@ function gameOver() {
   $('sumBody').innerHTML = runSummary(); $('bugOver').href = bugUrl();
   const fresh = SKINS.concat(HATS).filter(it => isUnlocked(it) && !before.includes(it));
   const box = $('unlocks'); box.hidden = !fresh.length;
-  box.innerHTML = fresh.map(it => `<div><b>Unlocked: ${it.name}${HATS.includes(it) ? ' hat' : ''}</b>${it.bonus ? ' \u00b7 ' + it.perk : ''}</div>`).join('') + (fresh.length ? '<small>Put it on in the Wardrobe.</small>' : '');
+  box.innerHTML = fresh.map(it => `<div><b>Unlocked: ${it.name}${HATS.includes(it) ? ' hat' : ''}</b>${it.perk ? ' \u00b7 ' + it.perk : ''}</div>`).join('') + (fresh.length ? '<small>Put it on in the Wardrobe.</small>' : '');
   $('shareTxt').hidden = true;
   setTimeout(() => { $('over').hidden = false; $('strikeBtn').hidden = true; $('againBtn').focus({ preventScroll: true }); }, 700);
   sfx.boom();
@@ -3515,7 +3669,7 @@ function shareText(isBest) {
   const label = m === 'daily' ? `Daily challenge, ${day}` : m === 'weekly' ? 'Weekly challenge' : MODE_NAME[m];
   const where = biomeNow().name + (p.weapon !== 'pistol' ? ' as ' + (p.evo || PATHS[p.weapon].name) : '');
   return [`\ud83d\udc39\ud83d\udd2b Capybara with a Gun \u00b7 ${label}`,
-    `\u23f1\ufe0f ${fmt(G.t)} \u00b7 \ud83d\udc51 ${G.bossKills} boss${G.bossKills === 1 ? '' : 'es'} \u00b7 \ud83d\udc1c ${G.kills.toLocaleString()} squished \u00b7 \u2b50 level ${p.level}`,
+    `\u23f1\ufe0f ${fmt(G.t)} \u00b7 \ud83d\udc51 ${G.bossKills} boss${G.bossKills === 1 ? '' : 'es'} \u00b7 \u2694\ufe0f ${G.kills.toLocaleString()} enemies defeated \u00b7 \u2b50 level ${p.level}`,
     `\ud83d\udccd ${where}${isBest ? ' \u00b7 new best!' : ''}`,
     ...(G.lap >= 3 ? [`\ud83c\udfc6 Gauntlet laps cleared: ${G.lap - 3}`] : []),
     GAME_URL].join('\n');
@@ -3534,8 +3688,8 @@ $('shareBtn').onclick = shareResult;
 const fmtNum = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'k' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n));
 function buildChips(p) {
   const path = PATHS[p.weapon], out = [];
-  for (const u of path.upg || []) if (p.wlv[u.id]) out.push(`<span class="chip">${u.name} ${p.wlv[u.id]}/${u.max}</span>`);
-  if (p.sw) for (const u of SUPERS[p.sw].upg) if (p.swlv[u.id]) out.push(`<span class="chip sup">${u.name} ${p.swlv[u.id]}/${u.max}</span>`);
+  for (const u of path.upg || []) if (p.wlv[u.id]) out.push(`<span class="chip">${u.name} ${p.wlv[u.id]}/${maxOf(u)}</span>`);
+  if (p.sw) for (const u of SUPERS[p.sw].upg) if (p.swlv[u.id]) out.push(`<span class="chip sup">${u.name} ${p.swlv[u.id]}/${maxOf(u)}</span>`);
   for (const u of GENERAL) if (p.upg[u.id]) out.push(`<span class="chip gen">${u.name} ${p.upg[u.id]}/${u.max}</span>`);
   return out.join('');
 }
@@ -3555,11 +3709,12 @@ function buildView() {
     line = `To evolve into ${evo.name}: ${key.name} ${p.wlv[evo.key] || 0}/${key.max} and ${gen.name} ${p.upg[evo.gen] ? '(done)' : '(not yet)'}`;
   }
   return `<h4>${p.evo || path.name} \u00b7 level ${p.level}</h4><p class="evoline">${line}</p><div class="build">${buildChips(p) || '<span class="chip">No upgrades yet</span>'}</div>` +
-    (sk && sk.perk ? `<p class="skinline">${sk.name} skin: ${sk.perk}</p>` : '');
+    (sk && sk.perk ? `<p class="skinline">${sk.name} skin: ${sk.perk}</p>` : '') +
+    (G.hat !== 'none' ? `<p class="skinline">${HATS.find(x => x.id === G.hat).name} hat: ${HATS.find(x => x.id === G.hat).perk}</p>` : '');
 }
 function runSummary() {
   const p = G.p, S = G.stats, tot = Object.values(S.dmg).reduce((a, b) => a + b, 0) || 1;
-  const lab = { gun: p.evo || PATHS[p.weapon].name, burn: 'Burning', airstrike: 'Airstrikes', orbit: 'Orange orbit', drone: 'Drone buddy', boomerang: 'Boomerang', heavy: p.sw ? (p.swEvo || SUPERS[p.sw].name) : 'Heavy weapon' };
+  const lab = { gun: p.evo || PATHS[p.weapon].name, burn: 'Burning', airstrike: 'Airstrikes', orbit: 'Orange orbit', drone: 'Drone buddy', boomerang: 'Boomerang', heavy: p.sw ? (p.swEvo || SUPERS[p.sw].name) : 'Heavy weapon', hat: 'Hat power', gas: 'Swamp gas' };
   const rows = Object.entries(S.dmg).sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([k, v]) => `<div class="dmgrow"><span>${lab[k] || k}</span><i style="--w:${(v / tot * 100).toFixed(1)}%"></i><b>${fmtNum(v)}</b></div>`).join('');
   const bosses = S.bosses.length ? S.bosses.map(b => `${b.name} (${fmt(b.secs)})`).join(', ') : 'none yet';
@@ -3578,7 +3733,7 @@ const gcArea = () => { const b = biomeNow(); return b.gauntlet ? 'gauntlet' : b.
 function bugUrl() {
   const lines = ['**What happened?**', '', '', '**What did you expect to happen?**', '', '', '---',
     `Version: ${GAME_VERSION}`, `Device: ${navigator.userAgent}`, `Screen: ${innerWidth}x${innerHeight}${TOUCH ? ', touch' : ''}${pad.gp ? ', controller' : ''}`];
-  if (G && G.t > 0) { const p = G.p; lines.push(`Mode: ${MODE_NAME[G.mode]}`, `Run: ${fmt(G.t)}, level ${p.level}, ${G.kills} ants, area ${biomeNow().name}`, `Path: ${p.evo || PATHS[p.weapon].name}`, `Upgrades: ${buildText(p)}`); }
+  if (G && G.t > 0) { const p = G.p; lines.push(`Mode: ${MODE_NAME[G.mode]}`, `Run: ${fmt(G.t)}, level ${p.level}, ${G.kills} enemies defeated, area ${biomeNow().name}`, `Path: ${p.evo || PATHS[p.weapon].name}`, `Upgrades: ${buildText(p)}`); }
   if (ON_SITE) return 'mailto:Steven@PetrieUK.co.uk?subject=' + encodeURIComponent('Capybara with a Gun bug') + '&body=' + encodeURIComponent(lines.join('\n').replace(/\*\*/g, ''));
   return 'https://github.com/PetrieUKDS/capy-gunner/issues/new?title=' + encodeURIComponent('Bug: ') + '&body=' + encodeURIComponent(lines.join('\n'));
 }
@@ -3650,18 +3805,18 @@ function openStats() {
   const area = prog.furthest >= 3 ? 'The Gauntlet' : BIOMES[prog.furthest].name;
   const tiles = [
     ['Runs played', prog.runs.toLocaleString()], ['Time played', fmtLong(prog.time)],
-    ['Squished', prog.kills.toLocaleString()], ['Bosses beaten', prog.bosses.toLocaleString()],
+    ['Enemies defeated', prog.kills.toLocaleString()], ['Bosses beaten', prog.bosses.toLocaleString()],
     ['Different bosses', `${Object.keys(BOSSES).filter(k => prog.beaten[k]).length} of ${Object.keys(BOSSES).length}`],
     ['Bestiary', `${found} of ${all}`], ['Favourite path', fav ? `${PATHS[fav[0]].name} (${fav[1]})` : 'None yet'],
     ['Furthest area', area], ['Gauntlet record', prog.gauntlet ? `${prog.gauntlet} lap${prog.gauntlet > 1 ? 's' : ''}` : 'None yet'],
-    ['Most in one run', prog.bestKills.toLocaleString()], ['Highest level', prog.bestLevel || '-'],
+    ['Most defeated in a run', prog.bestKills.toLocaleString()], ['Highest level', prog.bestLevel || '-'],
     ['Evolutions', prog.evos.toLocaleString()], ['Coins earned', prog.coinsEarned.toLocaleString()],
     ['Achievements', `${ACH.filter(a => prog.ach[a.id]).length} of ${ACH.length}`]
   ];
   $('statGrid').innerHTML = tiles.map(([k, v]) => `<div class="stile"><b>${v}</b><span>${k}</span></div>`).join('');
   $('statBest').innerHTML = ['easy', 'normal', 'nightmare', 'daily', 'weekly'].map(m => {
     const b = loadBest(m), when = m === 'daily' ? ' today' : m === 'weekly' ? ' this week' : '';
-    return `<div><span>${MODE_NAME[m]}${when}</span><b>${b ? `${fmt(b.time)} \u00b7 ${b.kills.toLocaleString()} squished` : 'Not played'}</b></div>`;
+    return `<div><span>${MODE_NAME[m]}${when}</span><b>${b ? `${fmt(b.time)} \u00b7 ${b.kills.toLocaleString()} defeated` : 'Not played'}</b></div>`;
   }).join('');
   $('statNote').textContent = 'Time played, favourite path, furthest area, coins earned and the single-run records count from version 34 onwards.';
   setTimeout(() => $('statsDone').focus({ preventScroll: true }), 50);
@@ -3800,7 +3955,7 @@ const fpsMeter = /[?&]fps\b/.test(location.search) && (() => {
     const fps = Math.round(frames * 1000 / span);
     if (clean) low = Math.min(low, fps);
     el.style.color = fps >= 50 ? '#a6f03c' : fps >= 30 ? '#ffd23a' : '#ff6b5a';
-    el.textContent = `${fps} fps · lowest ${low === Infinity ? '-' : low} · slowest frame ${Math.round(slow)} ms\n${G ? G.ants.length : 0} ants · ${G ? G.parts.length : 0} effects · Low graphics ${SET.low ? 'on' : 'off'}`;
+    el.textContent = `${fps} fps · lowest ${low === Infinity ? '-' : low} · slowest frame ${Math.round(slow)} ms\n${G ? G.ants.length : 0} enemies · ${G ? G.parts.length : 0} effects · Low graphics ${SET.low ? 'on' : 'off'}`;
     t0 = now; frames = 0; clean = true;
   };
 })();
