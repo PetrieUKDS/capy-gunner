@@ -461,7 +461,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '36';
+const GAME_VERSION = '37';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -3782,6 +3782,29 @@ function demo() {
 }
 demo();
 
+/* Add ?fps to the address for a small readout along the bottom, for testing on older phones: the frame rate now,
+   the lowest it has dipped this run, the slowest single frame this run, and how busy the screen is.
+   Does nothing without the flag, and with it only touches the page twice a second. */
+const fpsMeter = /[?&]fps\b/.test(location.search) && (() => {
+  const el = document.createElement('div');
+  el.id = 'fpsMeter';
+  el.style.cssText = 'position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom, 0px) + 3px);transform:translateX(-50%);z-index:99;pointer-events:none;font:700 10px/1.35 ui-monospace,Menlo,Consolas,monospace;white-space:pre;text-align:center;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.72);color:#a6f03c';
+  document.body.appendChild(el);
+  let t0 = performance.now(), prev = t0, frames = 0, low = Infinity, slow = 0, run = null, clean = true;
+  return now => {
+    if (G !== run) { run = G; low = Infinity; slow = 0; } // a new run starts its records afresh
+    const gap = now - prev, span = now - t0, inPlay = state === 'play'; prev = now; frames++;
+    if (!inPlay || gap >= 1000) clean = false; // a sample touching a menu or an app switch says nothing about play
+    else slow = Math.max(slow, gap);
+    if (span < 500) return;
+    const fps = Math.round(frames * 1000 / span);
+    if (clean) low = Math.min(low, fps);
+    el.style.color = fps >= 50 ? '#a6f03c' : fps >= 30 ? '#ffd23a' : '#ff6b5a';
+    el.textContent = `${fps} fps · lowest ${low === Infinity ? '-' : low} · slowest frame ${Math.round(slow)} ms\n${G ? G.ants.length : 0} ants · ${G ? G.parts.length : 0} effects · Low graphics ${SET.low ? 'on' : 'off'}`;
+    t0 = now; frames = 0; clean = true;
+  };
+})();
+
 let last = performance.now(), hudTick = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -3791,6 +3814,7 @@ function frame(now) {
   else if (state === 'bossdeath') updateDeath(dt);
   else if (state === 'menu' && G) { for (const a of G.ants) { a.walk += dt * 10; a.a += Math.sin(now / 900 + a.x) * dt; } G.p.walk += dt * 6; }
   draw();
+  if (fpsMeter) fpsMeter(now);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
