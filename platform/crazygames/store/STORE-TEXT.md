@@ -32,7 +32,9 @@ Clear all three areas to reach the Gauntlet, an endless run of laps mixing every
 - Easy, Normal and Nightmare difficulty
 - A daily challenge and a weekly challenge, each with its own twist
 - Rerolls and banishes on the level-up screen, with more to buy in the shop using coins you earn in runs
-- A wardrobe of capybara skins and hats to unlock, a bestiary, achievements and lifetime stats
+- 16 hats, each with its own special power, from orange bombs and a war horn to a once-a-run revive
+- A second tier of upgrades that opens up in the Midnight Swamp
+- Capybara skins to unlock, a bestiary, achievements and lifetime stats
 - Plays with keyboard, touch or controller
 - Progress saves to your CrazyGames account
 
