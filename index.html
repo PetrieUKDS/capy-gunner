@@ -502,9 +502,9 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '44';
+const GAME_VERSION = '45';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
-const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
+const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false, buzz: true }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
 let W = 0, H = 0, DPR = 1, ZOOM = 1, VW = 0, VH = 0, vignette = null;
 
@@ -554,41 +554,58 @@ function saveProg() { try { localStorage.setItem('capy-prog', JSON.stringify(pro
 let prog = loadProg();
 
 /* ---------- sound ---------- */
-let AC = null, muted = false, lastShot = 0, lastFlame = 0, lastBoom = 0;
+let AC = null, muted = false, lastShot = 0, lastFlame = 0, lastBoom = 0, lastSquish = 0, lastGem = 0, gemRun = 0;
 // iOS parks the context as 'interrupted' after a call or app switch, not just 'suspended', so resume on anything but 'running'
 function audio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state !== 'running' && AC.state !== 'closed') AC.resume().catch(() => {}); }
+// every sound effect goes through one compressor, so layered sounds can hit harder without clipping
+let SFXBUS = null;
+function sfxBus() {
+  if (!SFXBUS) {
+    SFXBUS = AC.createDynamicsCompressor();
+    SFXBUS.threshold.value = -16; SFXBUS.knee.value = 12; SFXBUS.ratio.value = 4; SFXBUS.attack.value = 0.003; SFXBUS.release.value = 0.2;
+    SFXBUS.connect(AC.destination);
+  }
+  return SFXBUS;
+}
 function tone(freq, dur, type = 'square', vol = 0.06, slide = 0) {
   if (!AC || muted || !SET.sfx) return;
   const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = type; o.frequency.setValueAtTime(freq, t);
   if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
   g.gain.setValueAtTime(vol * SET.sfx, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur);
+  o.connect(g).connect(sfxBus()); o.start(t); o.stop(t + dur);
 }
 // one shared 2-second noise buffer, played from a random spot with a fade-out, instead of filling a fresh
 // buffer for every explosion (that allocation churn stutters older phones in the busiest fights)
 let NOISE = null;
-function noise(dur, vol = 0.15, lp = 900) {
+function noise(dur, vol = 0.15, lp = 900, ftype = 'lowpass', q = 0.7) {
   if (!AC || muted || !SET.sfx) return;
   if (!NOISE) { const n = AC.sampleRate * 2; NOISE = AC.createBuffer(1, n, AC.sampleRate); const d = NOISE.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
   dur = Math.min(dur, 1.9);
   const t = AC.currentTime, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
-  f.type = 'lowpass'; f.frequency.value = lp; s.buffer = NOISE;
+  f.type = ftype; f.frequency.value = lp; f.Q.value = q; s.buffer = NOISE;
   g.gain.setValueAtTime(vol * SET.sfx, t); g.gain.linearRampToValueAtTime(0, t + dur);
-  s.connect(f).connect(g).connect(AC.destination); s.start(t, Math.random() * (2 - dur)); s.stop(t + dur);
+  s.connect(f).connect(g).connect(sfxBus()); s.start(t, Math.random() * (2 - dur)); s.stop(t + dur);
 }
 const later = (ms, fn) => setTimeout(fn, ms);
 const sfx = {
-  shoot() { const n = performance.now(); if (n - lastShot < 70) return; lastShot = n; tone(rand(520, 620), 0.05, 'square', 0.025, -300); },
-  pump() { noise(0.12, 0.12, 900); tone(120, 0.1, 'square', 0.04, -50); },
-  snipe() { tone(950, 0.14, 'sawtooth', 0.05, -820); noise(0.14, 0.1, 2400); },
-  thump() { tone(170, 0.12, 'triangle', 0.08, -100); },
+  // a gunshot: a filtered noise crack, a low thump and a tiny mechanical click
+  shoot() { const n = performance.now(); if (n - lastShot < 70) return; lastShot = n;
+    noise(0.045, 0.09, rand(2800, 3600), 'bandpass', 1.1); tone(rand(150, 180), 0.06, 'sine', 0.07, -90); tone(rand(950, 1150), 0.018, 'square', 0.01, -500); },
+  pump() { noise(0.18, 0.2, 1400); noise(0.05, 0.1, 4200, 'highpass'); tone(90, 0.16, 'sine', 0.13, -50); },
+  snipe() { noise(0.035, 0.16, 5200, 'highpass'); tone(950, 0.14, 'sawtooth', 0.045, -820); noise(0.16, 0.1, 2400); tone(70, 0.28, 'sine', 0.13, -35); },
+  thump() { tone(170, 0.12, 'triangle', 0.08, -100); noise(0.08, 0.08, 700); },
   flame() { const n = performance.now(); if (n - lastFlame < 140) return; lastFlame = n; noise(0.16, 0.05, 1500); },
-  squish() { tone(rand(160, 220), 0.08, 'sawtooth', 0.04, -120); },
-  gem() { tone(rand(880, 990), 0.06, 'triangle', 0.035, 200); },
-  hurt() { tone(140, 0.18, 'sawtooth', 0.08, -80); },
-  level() { [523, 659, 784, 1046].forEach((f, i) => later(i * 70, () => tone(f, 0.12, 'triangle', 0.07))); },
-  boom() { const n = performance.now(); if (n - lastBoom < 60) return; lastBoom = n; noise(0.5, 0.22, 600); tone(80, 0.4, 'sine', 0.1, -40); },
+  // a wet little splat, rate-limited so a whole swarm going down doesn't turn into a buzz
+  squish() { const n = performance.now(); if (n - lastSquish < 40) return; lastSquish = n;
+    noise(0.07, 0.08, rand(700, 1000), 'bandpass', 2); tone(rand(260, 330), 0.07, 'sine', 0.05, -200); },
+  // a bright two-note sparkle, climbing a little with each seed picked up in quick succession
+  gem() { const n = performance.now(); if (n - lastGem < 35) return; gemRun = n - lastGem < 400 ? Math.min(gemRun + 1, 12) : 0; lastGem = n;
+    const f = 1046 * Math.pow(2, gemRun / 24); tone(f, 0.06, 'sine', 0.035, 300); tone(f * 1.5, 0.05, 'triangle', 0.014); },
+  hurt() { tone(140, 0.18, 'sawtooth', 0.07, -80); noise(0.1, 0.12, 700); },
+  level() { [523, 659, 784, 1046].forEach((f, i) => later(i * 70, () => { tone(f, 0.14, 'triangle', 0.07); tone(f * 2, 0.1, 'sine', 0.02); })); later(300, () => tone(2093, 0.35, 'sine', 0.03, 40)); },
+  boom() { const n = performance.now(); if (n - lastBoom < 60) return; lastBoom = n;
+    noise(0.05, 0.14, 4500, 'highpass'); noise(0.6, 0.24, 650); tone(75, 0.5, 'sine', 0.15, -40); },
   chopper() { for (let i = 0; i < 10; i++) later(i * 90, () => noise(0.06, 0.12, 300)); },
   eat() { tone(400, 0.08, 'triangle', 0.06, 300); later(80, () => tone(600, 0.1, 'triangle', 0.06, 300)); },
   roar(kind) {
@@ -609,6 +626,7 @@ const sfx = {
 // short buzzes on phones that support it
 let lastBuzz = 0;
 function buzz(pat) {
+  if (!SET.buzz) return;
   const n = performance.now(); if (n - lastBuzz < 180) return;
   const va = pad.gp && pad.gp.vibrationActuator, ms = Array.isArray(pat) ? pat.reduce((a, b) => a + b, 0) : pat;
   if (va) { lastBuzz = n; try { const r = va.playEffect('dual-rumble', { duration: ms, strongMagnitude: 0.7, weakMagnitude: 0.5 }); if (r && r.catch) r.catch(() => {}); } catch (e) {} return; }
@@ -633,9 +651,15 @@ const SONGS = {
   gauntletBoss: { bpm: 162, chords: [[52, 55, 59], [53, 57, 60], [48, 52, 55], [47, 51, 54]], lead: 'square', bass: 'sawtooth' }  // Em F C B
 };
 const songKey = boss => { const b = biomeNow(), a = b.gauntlet ? 'gauntlet' : b.art === 'dunes' ? 'dunes' : b.art === 'swamp' ? 'swamp' : 'meadow'; return boss ? a + 'Boss' : a; };
-function mNote(f, t, dur, type, vol) {
+function mNote(f, t, dur, type, vol, wet) {
   const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
-  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(music.out); o.start(t); o.stop(t + dur + 0.02);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(music.out); if (wet) g.connect(music.wet); o.start(t); o.stop(t + dur + 0.02);
+}
+// a backbeat: a burst of band-passed noise with a short body tone under it
+function mSnare(t, vol) {
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = music.snare; f.type = 'bandpass'; f.frequency.value = 1900; f.Q.value = 0.8; g.gain.value = vol; s.connect(f).connect(g).connect(music.out); s.start(t);
+  mNote(190, t, 0.08, 'triangle', vol * 0.5);
 }
 function mKick(t, vol) {
   const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
@@ -651,23 +675,33 @@ function musicStep(i, t, S, boss, lvl, spb) {
   if (boss && b % 8 === 6) mKick(t, 0.35);
   if (b % 2 === 0) mNote(NOTE(ch[0] - 12 + (b % 8 === 6 ? 12 : 0)), t, spb * (S.slow ? 3 : 1.8), S.bass, S.bass === 'triangle' ? 0.16 : 0.08);
   if ((lvl >= 1 || boss) && b % 4 === 2) mHat(t, S.slow ? 0.08 : 0.14);
+  if ((lvl >= 1 || boss) && b % 8 === 4) mSnare(t, S.slow ? 0.12 : 0.2);
   const lv = { square: 0.03, sawtooth: 0.022, triangle: 0.07, sine: 0.08 }[S.lead];
   if ((lvl >= 2 || boss) && b % 2 === 1) {
     // the desert loop winds up and down like a snake charmer; the others arpeggiate
     const pat = S.snake ? [0, 1, 2, 1, 2, 1, 0, 1] : [0, 1, 2, 1, 0, 2, 1, 2], n = ch[pat[(b >> 1) % 8]] + 12 + (S.snake && b % 8 === 7 ? 1 : 0);
-    mNote(NOTE(n), t, spb * (S.slow ? 2.5 : 1.5), S.lead, lv);
+    mNote(NOTE(n), t, spb * (S.slow ? 2.5 : 1.5), S.lead, lv, true);
   }
-  if (S.slow && lvl >= 1 && b === 0) mNote(NOTE(ch[2] + 12), t, spb * 14, 'sine', 0.03); // a slow pad hanging over the swamp
+  if (S.slow && lvl >= 1 && b === 0) mNote(NOTE(ch[2] + 12), t, spb * 14, 'sine', 0.03, true); // a slow pad hanging over the swamp
   if (boss && b === 0) mNote(NOTE(ch[0] + 24), t, spb * 7, 'sawtooth', 0.025);
 }
 function musicTick() {
   if (!AC || muted || !G || !['play', 'levelup', 'intro', 'bossdeath'].includes(state)) { music.next = 0; return; }
   if (!music.out) {
-    music.out = AC.createGain(); music.out.gain.value = 0.32 * SET.music; music.out.connect(AC.destination);
+    // the mix: everything through a gentle low-pass (takes the fizz off the square and saw waves), with a
+    // short generated reverb that the lead and pads are sent into
+    music.out = AC.createGain(); music.out.gain.value = 0.32 * SET.music;
+    const soft = AC.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 5200; soft.Q.value = 0.5;
+    music.out.connect(soft).connect(AC.destination);
+    const verb = AC.createConvolver(), len = Math.floor(AC.sampleRate * 1.6), ir = AC.createBuffer(2, len, AC.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+    verb.buffer = ir; music.wet = AC.createGain(); music.wet.gain.value = 0.35; music.wet.connect(verb).connect(music.out);
+    const sn = Math.floor(AC.sampleRate * 0.18); music.snare = AC.createBuffer(1, sn, AC.sampleRate);
+    const sd = music.snare.getChannelData(0); for (let i = 0; i < sn; i++) sd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / sn, 2);
     const n = Math.floor(AC.sampleRate * 0.05); music.hat = AC.createBuffer(1, n, AC.sampleRate);
     const d = music.hat.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
   }
-  const boss = !!(G.boss || G.intro || G.death), key = songKey(boss), S = SONGS[key], spb = 60 / S.bpm / 4, lvl = G.t > 120 ? 2 : G.t > 45 ? 1 : 0;
+  const boss = !!(G.boss || G.intro || G.death), key = songKey(boss), S = SONGS[key], spb = 60 / S.bpm / 4, lvl = G.t > 40 ? 2 : G.t > 12 ? 1 : 0;
   if (key !== music.song) { music.song = key; music.step = 0; }
   if (music.next < AC.currentTime) music.next = AC.currentTime + 0.05;
   while (music.next < AC.currentTime + 0.15) { musicStep(music.step, music.next, S, boss, lvl, spb); music.step = (music.step + 1) % 64; music.next += spb; }
@@ -1051,8 +1085,8 @@ function newGame() {
     p: { x: 0, y: 0, r: 17, hp: 100, maxHp: 100, speed: 175, magnet: 85, regen: 0, orbit: 0, orbitDmg: 14,
          xp: 0, level: 1, next: 5, inv: 0, aim: 0, aim2: 0, walk: 0, moving: false, flash: 0, flash2: 0, firing: false, spinT: 0, alt: false, target2: null,
          weapon: 'pistol', w: { ...PATHS.pistol.base }, wlv: {}, tier: 0, cd: 0, burstLeft: 0, burstT: 0, upg: {},
-         strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0, sw: null, s: null, swlv: {}, swEvo: null, armor: 1, giant: 0, leech: 0, gas: 0, safeT: 0 },
-    ants: [], bullets: [], spit: [], nades: [], booms: [], gems: [], melons: [], parts: [], texts: [], strikes: [], orbA: 0,
+         strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0, sw: null, s: null, swlv: {}, swEvo: null, armor: 1, giant: 0, leech: 0, gas: 0, safeT: 0, kick: 0, ouch: 0, hop: 0 },
+    ants: [], splats: [], bullets: [], spit: [], nades: [], booms: [], gems: [], melons: [], parts: [], texts: [], strikes: [], orbA: 0,
     chests: [], pickups: [], tunnels: [], puddles: [], clouds: [], rerolls: 0, banishes: 0, banished: 0, banned: [], banishing: false
   };
 }
@@ -1181,6 +1215,13 @@ function spawnBoss() {
 }
 
 /* ---------- combat helpers ---------- */
+// a stain on the ground where an ant died, fading after a while (the oldest goes first once there are plenty)
+function splat(a) {
+  const max = SET.low ? 25 : 70; if (G.splats.length >= max) G.splats.shift();
+  const r = a.r * rand(0.9, 1.25), blobs = [];
+  for (let i = 0; i < 5; i++) { const t = rand(0, 6.283), d = rand(0.2, 0.75) * r; blobs.push([Math.cos(t) * d, Math.sin(t) * d * 0.7, rand(0.35, 0.6) * r]); }
+  G.splats.push({ x: a.x, y: a.y, blobs, col: a.metal ? '#14171c' : a.spit ? '#6f9a18' : '#2e1c0e', life: 12 });
+}
 function burst(x, y, col, n, spd = 160, size = 3) {
   n = Math.min(SET.low ? Math.ceil(n * 0.4) : n, 500 - G.parts.length);
   for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = rand(0.3, 1) * spd;
@@ -1238,7 +1279,8 @@ function killAnt(a, src) {
     if (Object.keys(BOSSES).every(k => prog.beaten[k])) award('allbosses');
     G.flash = 0.6; G.flashCol = '255,255,255'; buzz([60, 40, 140]);
   } else {
-    G.gems.push({ x: a.x, y: a.y, v: a.xp, spin: Math.random() * 6 });
+    G.gems.push({ x: a.x, y: a.y, v: a.xp, spin: Math.random() * 6, z: 0, vz: rand(90, 150), sx: rand(-45, 45), sy: rand(-45, 45) }); // pops out with a bounce
+    splat(a);
     if (Math.random() < (G.hat === 'chef' ? 0.018 : 0.012)) G.melons.push({ x: a.x, y: a.y });
     if (a.elite) {
       G.stats.elites++;
@@ -1268,7 +1310,7 @@ function damagePlayer(d, from) {
   d *= G.D.dmg * p.armor;
   if (G.hat === 'halo' && !G.hatUsed && p.hp - d <= 0) { hatRevive(); return; }
   p.hp -= d; p.hurtT = 1.5; G.shake = Math.max(G.shake, 6); G.bossClean = false;
-  if (p.inv <= 0) { p.inv = 0.2; sfx.hurt(); burst(p.x, p.y, '#e8503f', 6, 140, 3); buzz(35); }
+  if (p.inv <= 0) { p.inv = 0.2; p.ouch = 1; sfx.hurt(); burst(p.x, p.y, '#e8503f', 6, 140, 3); buzz(35); }
   if (p.hp <= 0) { p.hp = 0; gameOver(); }
 }
 const TYPE_NAME = { worker: 'a worker ant', runner: 'a runner ant', soldier: 'a soldier ant', spitter: 'a spitter ant', cyber: 'a cyber ant', driller: 'a driller ant', jet: 'a jet ant', laser: 'a laser ant', mech: 'a mech ant' };
@@ -1352,7 +1394,7 @@ function sniperShot(ang, gx, gy) {
   addBullet(gx, gy, ang, w.bspeed, w.range, { dmg: w.dmg * (crit ? 3 : 1), pierce: w.pierce, rico: w.rico, crit, kind: w.rail ? 'rail' : 'snipe' });
 }
 function fireWeapon(ang, gx, gy, tx, ty, second) {
-  const p = G.p, w = p.w, wp = p.weapon; if (second) p.flash2 = 0.06; else p.flash = 0.06;
+  const p = G.p, w = p.w, wp = p.weapon; if (second) p.flash2 = 0.06; else p.flash = 0.06; p.kick = 1;
   if (wp === 'gunner') {
     sfx.shoot();
     const n = w.twin ? 2 : 1;
@@ -1392,7 +1434,7 @@ function flameTick(want, gx, gy) {
 }
 
 /* ---------- level up ---------- */
-function closeLevelUp() { $('levelup').hidden = true; state = 'play'; last = performance.now(); if (G.hat === 'party') hatParty(); }
+function closeLevelUp() { $('levelup').hidden = true; state = 'play'; last = performance.now(); G.p.hop = 1; if (G.hat === 'party') hatParty(); }
 function openLevelUp(src) {
   state = 'levelup'; sfx.level();
   const p = G.p, box = $('picks'); box.innerHTML = '';
@@ -2210,10 +2252,16 @@ function update(dt) {
   const slow = p.slowed ? 0.5 : 1;
   p.x += mx * p.speed * slow * dt; p.y += my * p.speed * slow * dt;
   p.rageT = Math.max(0, p.rageT - dt);
-  p.moving = ml > 0.05; if (p.moving) p.walk += dt * 14;
+  p.moving = ml > 0.05;
+  if (p.moving) { // a little puff of dust at each footfall
+    const was = Math.sin(p.walk); p.walk += dt * 14;
+    if (!SET.low && Math.sign(Math.sin(p.walk)) !== Math.sign(was) && G.parts.length < 480)
+      for (const sd of [-1, 1]) G.parts.push({ x: p.x + sd * 7 - mx * 8, y: p.y + 17, vx: -mx * 30 + sd * 12, vy: -my * 20 - 12, life: 0.4, max: 0.4, smoke: true, dust: true, size: rand(2.5, 4), fr: 0.92 });
+  }
   p.safeT = Math.max(0, p.safeT - dt);
   p.inv = Math.max(0, p.inv - dt); p.flash = Math.max(0, p.flash - dt); p.flash2 = Math.max(0, p.flash2 - dt); p.strikeCd = Math.max(0, p.strikeCd - dt);
   p.hurtT = Math.max(0, p.hurtT - dt);
+  p.kick = Math.max(0, p.kick - dt * 10); p.ouch = Math.max(0, p.ouch - dt * 5); p.hop = Math.max(0, p.hop - dt * 2.8);
   // healing scales with max health, and slows to half speed (rather than stopping) for a moment after a bite
   if (p.regen) p.hp = Math.min(p.maxHp, p.hp + p.regen * p.maxHp * (p.hurtT > 0 ? 0.5 : 1) * dt);
 
@@ -2518,11 +2566,17 @@ function update(dt) {
   // gems + melons
   const mag2 = p.magnet * p.magnet;
   for (const g of G.gems) {
+    if (g.vz !== undefined) { // the hop out of a fresh kill: up, down, one small bounce, then it settles
+      g.z += g.vz * dt; g.vz -= 520 * dt; if (!g.pull) { g.x += g.sx * dt; g.y += g.sy * dt; }
+      if (g.z <= 0) { g.z = 0; if (g.vz < -70) g.vz *= -0.35; else g.vz = undefined; }
+    }
     const dx = p.x - g.x, dy = p.y - g.y, dd = dx * dx + dy * dy;
     if (dd < mag2 || g.pull) { g.pull = true; const d = Math.sqrt(dd) || 1, s = g.fast ? 900 : 420; g.x += dx / d * s * dt; g.y += dy / d * s * dt; }
     if (dd < (p.r + 6) ** 2) { g.dead = true; p.xp += g.v * p.xpMul * (G.vicT > 0 ? 2 : 1); sfx.gem(); }
     g.spin += dt * 3;
   }
+  for (const s of G.splats) s.life -= dt;
+  if (G.splats.length && G.splats[0].life <= 0) G.splats = G.splats.filter(s => s.life > 0);
   for (const m of G.melons) {
     const dx = p.x - m.x, dy = p.y - m.y, dd = dx * dx + dy * dy;
     if (dd < mag2 || m.pull) { m.pull = true; const d = Math.sqrt(dd) || 1, s = m.fast ? 900 : 420; m.x += dx / d * s * dt; m.y += dy / d * s * dt; }
@@ -2844,14 +2898,17 @@ function drawCapy() {
   const step = p.moving ? Math.sin(p.walk) : 0, bob = p.moving ? -Math.abs(step) * 3 : Math.sin(G.t * 3) * 0.6;
   if (p.inv > 0 && Math.floor(p.inv * 30) % 2) ctx.globalAlpha = 0.5;
   const lift = G.hatFly > 0 ? Math.min(1, G.hatFly * 3, (3 - G.hatFly) * 3) * 30 : 0; // Propeller hat
-  ctx.save(); ctx.translate(p.x, p.y - lift);
+  const hop = p.hop > 0 ? Math.sin((1 - p.hop) * Math.PI) * 14 : 0; // a happy hop after a level-up
+  ctx.save(); ctx.translate(p.x, p.y - lift - hop);
   if (p.rageT > 0) { // rage: a hot red glow, flickering faster as it runs out
     const g = ctx.createRadialGradient(0, -10, 6, 0, -10, 52); g.addColorStop(0, `rgba(255,60,30,${0.45 + 0.15 * Math.sin(G.t * (p.rageT < 3 ? 30 : 12))})`); g.addColorStop(1, 'rgba(255,60,30,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -10, 52, 0, 6.283); ctx.fill();
   }
-  ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(0, 18 + lift, 17, 5, 0, 0, 6.283); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(0, 18 + lift + hop, 17 * (1 - hop / 40), 5, 0, 0, 6.283); ctx.fill();
   // waddle: rock side to side around the feet while walking
-  ctx.save(); ctx.translate(0, 18); ctx.rotate(step * 0.07); ctx.scale(face, 1);
+  // squash from the gun's kick and from getting bitten, pivoting on the feet
+  const sq = (p.ouch || 0) * 0.14 + (p.kick || 0) * 0.035;
+  ctx.save(); ctx.translate(0, 18); ctx.rotate(step * 0.07); ctx.scale(face * (1 + sq), 1 - sq * 0.85);
   // akimbo: the second pistol sits in the far paw, so it is drawn behind the body
   if (p.weapon === 'pistolier' && p.w.dual) {
     ctx.save(); ctx.translate(PAW_X - 6, PAW_Y - 15 + bob); ctx.rotate(face > 0 ? p.aim2 : Math.PI - p.aim2);
@@ -2860,7 +2917,7 @@ function drawCapy() {
   paintCapy(ctx, prog.skin, prog.hat, bob);
   ctx.restore();
   // gun pivots on the paws (always aims, never upside down)
-  ctx.save(); ctx.translate(face * PAW_X, PAW_Y + bob); ctx.rotate(p.aim); if (face < 0) ctx.scale(1, -1);
+  ctx.save(); ctx.translate(face * PAW_X, PAW_Y + bob); ctx.rotate(p.aim); if (face < 0) ctx.scale(1, -1); ctx.translate(-(p.kick || 0) * 3, 0); // recoil
   if (p.weapon === 'sniper' && p.tier >= 3) { ctx.strokeStyle = 'rgba(255,50,50,0.35)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(muzzleOf('sniper', 3), -0.5); ctx.lineTo(340, -0.5); ctx.stroke(); }
   if (p.evo) { ctx.shadowColor = '#ffd23a'; ctx.shadowBlur = 12; } // evolved guns glow gold
   drawGun(ctx, p.weapon, p.tier, p.flash > 0, p.firing);
@@ -3327,6 +3384,14 @@ function draw() {
   drawGround(cx, cy);
   const bio = biomeNow();
   const inV = (x, y, m = 60) => Math.abs(x - cx) < VW / 2 + m && Math.abs(y - cy) < VH / 2 + m;
+  // stains where ants died, fading over their last 3 seconds
+  for (const s of G.splats) {
+    if (!inV(s.x, s.y, 30)) continue;
+    ctx.globalAlpha = 0.5 * Math.min(1, s.life / 3); ctx.fillStyle = s.col; ctx.beginPath();
+    for (const [bx, by, br] of s.blobs) { ctx.moveTo(s.x + bx + br, s.y + by); ctx.ellipse(s.x + bx, s.y + by, br, br * 0.75, 0, 0, 6.283); }
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 
   for (const c of G.clouds) if (inV(c.x, c.y, c.r + 20)) {
     if (c.t < c.warn) { // where the cloud is about to burst
@@ -3393,10 +3458,10 @@ function draw() {
     if (!list.length) continue;
     const s = tier.s;
     ctx.globalAlpha = 0.18 + 0.14 * pulse; ctx.fillStyle = tier.col; ctx.beginPath();
-    for (const g of list) { const y = g.y + Math.sin(g.spin * 1.5) * 2; ctx.moveTo(g.x + s * 2.4, y); ctx.arc(g.x, y, s * 2.4, 0, 6.283); }
+    for (const g of list) { const y = g.y - (g.z || 0) + Math.sin(g.spin * 1.5) * 2; ctx.moveTo(g.x + s * 2.4, y); ctx.arc(g.x, y, s * 2.4, 0, 6.283); }
     ctx.fill(); ctx.globalAlpha = 1;
     ctx.beginPath();
-    for (const g of list) { const y = g.y + Math.sin(g.spin * 1.5) * 2, rot = Math.sin(g.spin) * 0.6; ctx.moveTo(g.x + Math.cos(rot) * s * 0.7, y + Math.sin(rot) * s * 0.7); ctx.ellipse(g.x, y, s * 0.7, s * 1.1, rot, 0, 6.283); }
+    for (const g of list) { const y = g.y - (g.z || 0) + Math.sin(g.spin * 1.5) * 2, rot = Math.sin(g.spin) * 0.6; ctx.moveTo(g.x + Math.cos(rot) * s * 0.7, y + Math.sin(rot) * s * 0.7); ctx.ellipse(g.x, y, s * 0.7, s * 1.1, rot, 0, 6.283); }
     ctx.fillStyle = tier.col; ctx.fill(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.8; ctx.stroke();
   }
   // strike reticles (behind ants, like a gunner cam marker)
@@ -3527,7 +3592,7 @@ function draw() {
   }
   // smoke first, so the fire glows through it
   for (const q of G.parts) if (q.smoke) {
-    const kk = q.life / q.max; ctx.fillStyle = `rgba(48,40,34,${0.42 * Math.min(1, kk * 2) * Math.min(1, (1 - kk) * 5)})`;
+    const kk = q.life / q.max; ctx.fillStyle = `rgba(${q.dust ? '196,178,140' : '48,40,34'},${(q.dust ? 0.32 : 0.42) * Math.min(1, kk * 2) * Math.min(1, (1 - kk) * 5)})`;
     ctx.beginPath(); ctx.arc(q.x, q.y, q.size * (1.8 - kk), 0, 6.283); ctx.fill();
   }
   // flames: soft glowing blobs stretched along their motion, white-hot at the nozzle, cooling through
@@ -3804,7 +3869,7 @@ function closeSettings() { $('settings').hidden = true; $(settingsFrom === 'paus
 function buildSettings(keep) {
   const vol = (k, name) => `<div class="setrow"><span>${name}</span><div class="setctl"><button class="sbtn" type="button" data-k="${k}" data-d="-1" aria-label="${name} down">\u2212</button><b>${Math.round(SET[k] * 100)}%</b><button class="sbtn" type="button" data-k="${k}" data-d="1" aria-label="${name} up">+</button></div></div>`;
   const tog = (k, name, sub) => `<div class="setrow"><span>${name}${sub ? `<small>${sub}</small>` : ''}</span><button class="sbtn" type="button" data-k="${k}" aria-pressed="${SET[k]}">${SET[k] ? 'On' : 'Off'}</button></div>`;
-  $('setList').innerHTML = vol('music', 'Music') + vol('sfx', 'Sound effects') + tog('shake', 'Screen shake') + tog('flash', 'Screen flash', 'The white flash on big hits') +
+  $('setList').innerHTML = vol('music', 'Music') + vol('sfx', 'Sound effects') + tog('shake', 'Screen shake') + tog('buzz', 'Vibration', 'Phones and controllers buzz on hits, level-ups and big kills') + tog('flash', 'Screen flash', 'The white flash on big hits') +
     tog('numbers', 'Damage numbers') + tog('hivis', 'High-visibility enemy shots', 'A white halo round every enemy shot, easier to spot whatever your colour vision') +
     tog('big', 'Bigger HUD', 'Larger health bar, clock and airstrike button') + tog('low', 'Low graphics', 'Fewer particles and a lower-resolution screen, for older phones');
   if (keep) { const b = $('setList').querySelector(`[data-k="${keep[0]}"]${keep[1] ? `[data-d="${keep[1]}"]` : ''}`); if (b) b.focus({ preventScroll: true }); }
