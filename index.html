@@ -502,7 +502,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
     <div class="best" id="bestOver"></div>
     <button class="btn" id="againBtn" type="button">Play again</button>
     <textarea class="sharetxt" id="shareTxt" rows="5" readonly hidden aria-label="Your result, ready to copy"></textarea>
-    <div class="overbtns"><button class="ibtn wbtn share" id="shareBtn" type="button">Share result</button><button class="ibtn wbtn" id="overWardrobe" type="button">Wardrobe</button><button class="ibtn wbtn" id="overShop" type="button">Shop</button><button class="ibtn wbtn" id="overMenu" type="button">Menu</button><a class="ibtn wbtn" id="bugOver" target="_blank" rel="noopener">Report a bug</a></div>
+    <div class="overbtns"><button class="ibtn wbtn share" id="shareBtn" type="button">Share result</button><button class="ibtn wbtn" id="cardBtn" type="button">Save picture</button><button class="ibtn wbtn" id="overWardrobe" type="button">Wardrobe</button><button class="ibtn wbtn" id="overShop" type="button">Shop</button><button class="ibtn wbtn" id="overMenu" type="button">Menu</button><a class="ibtn wbtn" id="bugOver" target="_blank" rel="noopener">Report a bug</a></div>
   </div>
 </div>
 
@@ -512,7 +512,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '49';
+const GAME_VERSION = '50';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false, buzz: true }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -3954,11 +3954,66 @@ function shareText(isBest) {
     ...(G.lap >= 3 ? [`\ud83c\udfc6 Gauntlet laps cleared: ${G.lap - 3}`] : []),
     GAME_URL].join('\n');
 }
+// a square picture of the run to share: the capybara in its skin and hat with its animal friends on board,
+// the time and the numbers, and where to play
+function shareCard() {
+  const S = 1080, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'), p = G.p, bio = biomeNow();
+  const tile = bio.art && BIOME_ART[bio.art] ? BIOME_ART[bio.art].grass : GROUND_ART.grass;
+  g.fillStyle = '#3c6b2f'; g.fillRect(0, 0, S, S);
+  if (artOk(tile)) { g.fillStyle = g.createPattern(tile.img, 'repeat'); g.fillRect(0, 0, S, S); }
+  g.fillStyle = 'rgba(6,12,7,0.45)'; g.fillRect(0, 0, S, S);
+  const glow = g.createRadialGradient(330, 760, 40, 330, 760, 520); glow.addColorStop(0, 'rgba(255,190,80,0.35)'); glow.addColorStop(1, 'rgba(255,190,80,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, S, S);
+  const ot = (t, x, y, sz, fill, align = 'center') => {
+    g.font = `${sz}px "Lilita One", Impact, sans-serif`; g.textAlign = align; g.lineJoin = 'round';
+    g.lineWidth = sz * 0.2; g.strokeStyle = '#1a1206'; g.strokeText(t, x, y, S - 60); g.fillStyle = fill; g.fillText(t, x, y, S - 60);
+  };
+  ot('CAPYBARA', S / 2, 150, 124, '#ffd23a'); ot('WITH A GUN', S / 2, 250, 90, '#ff9a1f');
+  // the capybara, six times its size in the game, with its gun and whoever is riding along
+  g.save(); g.translate(300, 960); g.scale(6, 6);
+  g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.ellipse(0, 0, 20, 5, 0, 0, 6.283); g.fill();
+  paintCapy(g, prog.skin, prog.hat, 0);
+  G.friends.forEach((f, i) => {
+    const A = FRIEND_ART[f.kind]; if (!A || !A.img.naturalWidth) return;
+    const [sx, sy] = FRIEND_SEATS[i], h = FRIENDS[f.kind].h, w = h * A.w / A.h; g.drawImage(A.img, sx - w / 2, sy - h / 2, w, h);
+  });
+  g.save(); g.translate(PAW_X, PAW_Y - 18); g.rotate(-0.12); drawGun(g, p.weapon, p.tier, false, false); g.restore();
+  g.restore();
+  // the numbers
+  const X = 600, Y = 330, PW = 440, PH = 560;
+  g.fillStyle = 'rgba(16,26,18,0.82)'; g.strokeStyle = 'rgba(255,255,255,0.18)'; g.lineWidth = 3;
+  g.beginPath(); g.roundRect(X, Y, PW, PH, 28); g.fill(); g.stroke();
+  const label = G.mode === 'daily' ? 'Daily challenge' : G.mode === 'weekly' ? 'Weekly challenge' : MODE_NAME[G.mode];
+  g.font = '800 30px Rubik, system-ui, sans-serif'; g.textAlign = 'center'; g.fillStyle = '#ff9a1f'; g.fillText(label.toUpperCase(), X + PW / 2, Y + 62);
+  ot(fmt(G.t), X + PW / 2, Y + 190, 128, '#ffffff');
+  g.font = '800 28px Rubik, system-ui, sans-serif'; g.fillStyle = '#c9d3c2'; g.fillText('SURVIVED', X + PW / 2, Y + 236);
+  const rows = [`${G.kills.toLocaleString()} enemies defeated`, `${G.bossKills} boss${G.bossKills === 1 ? '' : 'es'} beaten`,
+    `Level ${p.level}` + (p.weapon !== 'pistol' ? ` \u00b7 ${p.evo || PATHS[p.weapon].name}` : ''), `Reached ${bio.name}`,
+    G.friends.length ? `${G.friends.length} animal friend${G.friends.length === 1 ? '' : 's'} aboard` : `Taken down by ${G.stats.killer}`];
+  g.font = '600 31px Rubik, system-ui, sans-serif'; g.fillStyle = '#ffffff';
+  rows.forEach((r, i) => g.fillText(r, X + PW / 2, Y + 312 + i * 50, PW - 40));
+  const host = GAME_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  ot('Play free: ' + host, S / 2, 1046, 44, '#ffffff');
+  return c;
+}
+const cardBlob = () => new Promise(r => shareCard().toBlob(r, 'image/png'));
+async function saveCard() {
+  if (!G) return; gc('share-card/' + G.mode);
+  const url = URL.createObjectURL(await cardBlob()), a = document.createElement('a');
+  a.href = url; a.download = `capybara-with-a-gun-${fmt(G.t).replace(':', 'm')}s.png`; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+$('cardBtn').onclick = saveCard;
 async function shareResult() {
   const txt = G && G.share, b = $('shareBtn'); if (!txt) return; gc('share/' + G.mode);
   const said = t => { b.textContent = t; setTimeout(() => { b.textContent = 'Share result'; }, 2000); };
   // phones get the share sheet; everything else copies to the clipboard
-  if (TOUCH && navigator.share) { try { await navigator.share({ text: txt }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (TOUCH && navigator.share) {
+    try { // the picture and the text together where the phone allows it, otherwise just the text
+      const f = new File([await cardBlob()], 'capybara-with-a-gun.png', { type: 'image/png' });
+      await navigator.share(navigator.canShare && navigator.canShare({ files: [f] }) ? { files: [f], text: txt } : { text: txt }); return;
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
   try { await navigator.clipboard.writeText(txt); said('Copied!'); return; } catch (e) {}
   const ta = $('shareTxt'); ta.hidden = false; ta.value = txt; ta.focus(); ta.select(); said('Copy the text below'); // no clipboard here (some embeds block it)
 }
