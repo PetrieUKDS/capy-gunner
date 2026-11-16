@@ -26,7 +26,7 @@ def rep(old, new, count=1):
 rep("  DPR = SET.low ? 1 : Math.min(1.5, window.devicePixelRatio || 1);", "  DPR = window.__LW ? window.__PX / window.__LW : (SET.low ? 1 : Math.min(1.5, window.devicePixelRatio || 1));")
 rep("  W = innerWidth; H = innerHeight;", "  W = window.__LW || innerWidth; H = window.__LH || innerHeight;")
 rep("  ZOOM = Math.max(0.8, Math.min(1, Math.min(W, H) / 720));", "  ZOOM = window.__ZOOM || Math.max(0.8, Math.min(1, Math.min(W, H) / 720));")
-rep(".connect(AC.destination)", ".connect(window.__OUT || AC.destination)", 3)
+rep(".connect(AC.destination)", ".connect(window.__OUT || AC.destination)", 2)  # the sound-effect compressor and the music mix
 rep("const TOUCH = matchMedia('(pointer: coarse)').matches,", "const TOUCH = false,")
 rep("function frame(now) {\n", "function frame(now) {\n  if (window.__manual) { last = now; requestAnimationFrame(frame); return; }\n")
 hook = """window.__t = { get G() { return G; }, get state() { return state; }, set state(v) { state = v; }, get AC() { return AC; }, cv, audio, start, update, draw, updateIntro, updateDeath,
