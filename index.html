@@ -408,6 +408,14 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
     <p class="lede" id="firstHint">Your gun fires by itself. Just keep moving.</p>
   </div>
 </div>
+<div class="screen" id="revive" hidden>
+  <div class="card fcard">
+    <h2>Not done yet?</h2>
+    <p class="lede">Watch a short ad and the capybara gets back up at half health. Once per run.</p>
+    <button class="btn" id="reviveBtn" type="button">Watch ad to revive</button>
+    <button class="ibtn wbtn" id="reviveNo" type="button">No thanks</button>
+  </div>
+</div>
 <div class="screen" id="spring" hidden>
   <div class="card scard">
     <img id="springImg" alt="The capybara soaking in a hot spring, eyes closed, with oranges floating around it" width="800" height="450">
@@ -522,7 +530,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '51';
+const GAME_VERSION = '52';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false, buzz: true }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -796,6 +804,7 @@ addEventListener('keydown', e => {
   if (!$('firstPlay').hidden) { if (!e.repeat) firstGo(); return; } // any key starts the first run
   if (state === 'intro') { if (!e.repeat && [' ', 'enter', 'escape'].includes(k)) skipIntro(); return; }
   if (state === 'spring') { if (!e.repeat && [' ', 'enter', 'escape'].includes(k)) closeSpring(); return; }
+  if (state === 'revive') { if (!e.repeat && k === 'escape') skipRevive(); return; }
   if (state === 'bossdeath') { if (!e.repeat && [' ', 'enter', 'escape'].includes(k)) skipDeath(); return; }
   if (state === 'play') {
     if (k === ' ') callStrike();
@@ -1391,7 +1400,7 @@ function damagePlayer(d, from) {
   if (G.hat === 'halo' && !G.hatUsed && p.hp - d <= 0) { hatRevive(); return; }
   p.hp -= d; p.hurtT = 1.5; G.shake = Math.max(G.shake, 6); G.bossClean = false;
   if (p.inv <= 0) { p.inv = 0.2; p.ouch = 1; say('bit', 0.3); sfx.hurt(); burst(p.x, p.y, '#e8503f', 6, 140, 3); buzz(35); }
-  if (p.hp <= 0) { p.hp = 0; gameOver(); }
+  if (p.hp <= 0) { p.hp = 0; if (window.__capyReviveAd && !G.adRevived && G.t > 30) offerRevive(); else gameOver(); }
 }
 const TYPE_NAME = { worker: 'a worker ant', runner: 'a runner ant', soldier: 'a soldier ant', spitter: 'a spitter ant', cyber: 'a cyber ant', driller: 'a driller ant', jet: 'a jet ant', laser: 'a laser ant', mech: 'a mech ant' };
 // each later area swaps the ants for its own creatures; every role keeps its behaviour
@@ -1817,6 +1826,25 @@ function hatVanish() {
   burst(p.x, p.y, '#b9a7d9', SET.low ? 8 : 20, 200, 6); tone(880, 0.18, 'sine', 0.05, -500); hatSay('NOW YOU SEE ME!');
 }
 // Halo: a fatal hit brings you back once a run
+// A second chance for an ad. Only where the platform supplies window.__capyReviveAd (the CrazyGames build
+// does; petrieuk.co.uk has no ads, so it never sees this), only after the first 30 seconds, once a run.
+function offerRevive() {
+  state = 'revive'; $('revive').hidden = false; $('reviveBtn').disabled = false; $('reviveBtn').textContent = 'Watch ad to revive';
+  setTimeout(() => $('reviveBtn').focus({ preventScroll: true }), 50);
+}
+function takeRevive() {
+  if (state !== 'revive') return;
+  G.adRevived = true; $('reviveBtn').disabled = true; $('reviveBtn').textContent = 'Loading ad...';
+  window.__capyReviveAd(ok => {
+    $('revive').hidden = true; if (!G || state !== 'revive') return;
+    if (!ok) { gameOver(); return; }
+    const p = G.p; state = 'play'; last = performance.now(); p.hp = Math.round(p.maxHp * 0.5); p.safeT = 2.5; p.hop = 1;
+    G.banner = { txt: 'BACK ON YOUR FEET!', life: 2.2 }; G.flash = 0.5; G.flashCol = '255,245,190';
+    for (const t of nearestFoes(200, 340)) if (!t.boss) { const d = Math.hypot(t.x - p.x, t.y - p.y) || 1; t.x += (t.x - p.x) / d * 160; t.y += (t.y - p.y) / d * 160; t.frozen = Math.max(t.frozen || 0, 1.2); }
+    G.parts.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.5, max: 0.5, ring: 340 }); tone(990, 0.5, 'sine', 0.07, 400); say('spring', 1, true);
+  });
+}
+function skipRevive() { if (state !== 'revive') return; $('revive').hidden = true; gameOver(); }
 function hatRevive() {
   const p = G.p; G.hatUsed = true; p.hp = p.maxHp; p.safeT = 2.5; G.banner = { txt: 'GUARDIAN ANGEL!', life: 2.2 }; G.flash = 0.6; G.flashCol = '255,245,190';
   for (const t of nearestFoes(200, 340)) { if (!t.boss) { const d = Math.hypot(t.x - p.x, t.y - p.y) || 1; t.x += (t.x - p.x) / d * 140; t.y += (t.y - p.y) / d * 140; t.frozen = Math.max(t.frozen || 0, 1.2); } }
@@ -4312,6 +4340,7 @@ const toMenu = () => { state = 'menu'; ['paused', 'over', 'hud', 'strikeBtn', 'b
 $('playBtn').onclick = () => start(prog.diff); $('againBtn').onclick = () => start(G.mode); $('dailyBtn').onclick = () => start('daily'); $('weeklyBtn').onclick = () => start('weekly');
 $('overMenu').onclick = toMenu;
 $('springBtn').onclick = closeSpring;
+$('reviveBtn').onclick = takeRevive; $('reviveNo').onclick = skipRevive;
 // first visit: one big Play button instead of the full menu, straight into a Normal run.
 // The menu (modes, challenges, wardrobe and so on) appears once that first run ends.
 function firstGo() { if ($('firstPlay').hidden) return; audio(); start('normal'); }
