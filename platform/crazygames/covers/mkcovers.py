@@ -25,7 +25,7 @@ def rep(old, new, count=1):
 # the page lays the game out at a fixed logical size (__LW x __LH) and draws it at __PX pixels wide
 rep("  DPR = SET.low ? 1 : Math.min(1.5, window.devicePixelRatio || 1);", "  DPR = window.__LW ? window.__PX / window.__LW : (SET.low ? 1 : Math.min(1.5, window.devicePixelRatio || 1));")
 rep("  W = innerWidth; H = innerHeight;", "  W = window.__LW || innerWidth; H = window.__LH || innerHeight;")
-rep("  ZOOM = Math.max(0.62, Math.min(1, Math.min(W, H) / 720));", "  ZOOM = window.__ZOOM || Math.max(0.62, Math.min(1, Math.min(W, H) / 720));")
+rep("  ZOOM = Math.max(0.8, Math.min(1, Math.min(W, H) / 720));", "  ZOOM = window.__ZOOM || Math.max(0.8, Math.min(1, Math.min(W, H) / 720));")
 rep(".connect(AC.destination)", ".connect(window.__OUT || AC.destination)", 3)
 rep("const TOUCH = matchMedia('(pointer: coarse)').matches,", "const TOUCH = false,")
 rep("function frame(now) {\n", "function frame(now) {\n  if (window.__manual) { last = now; requestAnimationFrame(frame); return; }\n")

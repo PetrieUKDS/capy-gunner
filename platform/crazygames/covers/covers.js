@@ -41,7 +41,7 @@ window.COVERS = (() => {
     return best;
   }
   // the game's own view size in world units (W / ZOOM), worked out from the logical layout
-  const zoom = () => window.__ZOOM || Math.max(0.62, Math.min(1, Math.min(window.__LW, window.__LH) / 720));
+  const zoom = () => window.__ZOOM || Math.max(0.8, Math.min(1, Math.min(window.__LW, window.__LH) / 720));
   const innerWidthLogical = () => window.__LW / zoom(), innerHeightLogical = () => window.__LH / zoom();
 
   function outlined(c, txt, x, y, size, fill) {
