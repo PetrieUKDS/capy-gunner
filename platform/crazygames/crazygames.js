@@ -3,7 +3,7 @@
 // talks to the game through the small hook the build adds at the end of the game's closure.
 (() => {
   'use strict';
-  let sdk = null;
+  let sdk = null, game = null;
   const log = (...a) => { try { console.info('[crazygames]', ...a); } catch (e) {} };
   const call = (fn) => { if (!sdk) return; try { fn(sdk); } catch (e) { log('sdk call failed', e); } };
 
@@ -31,6 +31,7 @@
 
   // Called by the game (from the hook the build adds) once the game has set itself up.
   window.__capyHook = (g) => {
+    game = g;
     call(s => s.game.loadingStop());
     const PLAYING = ['play', 'intro', 'bossdeath'];
     let was = g.state, playing = false, sdkMute = false, adBusy = false;
@@ -70,6 +71,20 @@
       const nowPlaying = PLAYING.includes(now);
       if (nowPlaying !== playing) { playing = nowPlaying; call(s => nowPlaying ? s.game.gameplayStart() : s.game.gameplayStop()); }
     }, 150);
+  };
+
+  // The game's "Not done yet?" revive (v52) asks for this. It plays a CrazyGames rewarded ad, with the game's
+  // sound suspended, and revives on adFinished. If no ad can be shown (adError, e.g. none to fill the slot) the
+  // player still gets the revive: they asked for it, and it isn't their fault there was nothing to watch.
+  window.__capyReviveAd = (done) => {
+    if (!sdk) { done(true); return; }
+    let ac = null, settled = false;
+    const finish = (ok) => { if (settled) return; settled = true; if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); done(ok); };
+    call(s => s.ad.requestAd('rewarded', {
+      adStarted: () => { ac = game && game.AC; if (ac) ac.suspend().catch(() => {}); },
+      adFinished: () => finish(true),
+      adError: (e) => { log('rewarded ad not shown', e && e.code); finish(true); },
+    }));
   };
 
   function loadGame() {

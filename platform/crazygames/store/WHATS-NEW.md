@@ -1,23 +1,24 @@
-# Capybara with a Gun: what's new in version 40
+# Capybara with a Gun: what's new in version 52
 
-Changes since version 35.
+Changes since the Basic Launch (version 40). The resubmission note for CrazyGames can be cut down from this.
+
+## A faster first minute
+
+- A first visit opens on one big Play button instead of the full menu, and a run starts busy: ants arrive within a couple of seconds.
+- On phones the camera is about 30% closer, so the capybara and the ants are easy to see.
+- The first weapon choice offers three paths in compact cards that fit on one screen. The instructions fold away under "How to play".
 
 ## New
 
-- Every hat now has its own special power, and the wardrobe shows what each one does. There are 16 in all, from orange bombs and a war horn to a once-a-run revive.
-- The Midnight Swamp unlocks seven new upgrades, plus two extra levels on each gun's main damage and fire-rate upgrades.
+- **Animal friends:** elites and bosses drop a duckling, a blue tit or a monkey that hops on the capybara's back and helps. Up to four ride at once, stacked up.
+- **Hot-spring break:** after the boss that closes an area, the capybara soaks in a hot spring with oranges floating round it, fully healed, before the next area.
+- **The capybara talks:** short deadpan remarks like "rude.", "big ant." and "ten out of ten.".
+- **Daily streak and Today's jobs:** coins for every day in a row, and three small jobs a day for more.
+- **Share a picture of your run** from the game-over screen.
+- **Not done yet?** A rewarded ad to get back up once per run.
 
-## Balance
+## Feel
 
-- Bosses in the Scorched Dunes and Midnight Swamp now put up a proper fight. Heavy weapons were far too strong alongside piercing guns and could delete a boss in seconds.
-- Boss health now takes your heavy weapon into account, and no single hit can take more than 10% of a boss's health.
-- Enemies in the Midnight Swamp and the Gauntlet are tougher.
-- From the Scorched Dunes onwards, your gun targets a boss unless something is right on top of you.
-
-## Fixes
-
-- The daily and weekly challenge banners no longer run off the screen on phones.
-- The health bar label is no longer cut off on very narrow phones.
-- Sound now comes back on iPhones after a call or switching apps.
-- Less stutter on older phones during big explosions.
-- The kill counter now reads Enemies Defeated, because the later areas aren't all ants.
+- New sound effects, a fuller soundtrack with a snare and earlier layers, and a balance where the music comes through the gunfire.
+- The capybara's gun kicks, it squashes when bitten and hops on a level-up. Kills leave splats and seeds pop out with a bounce.
+- Vibration can be switched off in Settings.
