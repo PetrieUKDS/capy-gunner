@@ -276,6 +276,15 @@ body.bighud .strike span { width: 98px; height: 98px; font-size: 19px; }
 .daily b { font: 19px var(--display); color: var(--acid); }
 .daily.weekly { background: rgba(255,154,31,.08); border-color: rgba(255,154,31,.35); }
 .daily.weekly:hover { border-color: var(--orange); }
+.jobs { display: grid; gap: 6px; text-align: left; background: rgba(127,216,255,.07); border: 2px solid rgba(127,216,255,.3); border-radius: 12px; padding: 10px 14px; }
+.jobs .jh { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.jobs .jh b { font: 19px var(--display); color: #8fd8ff; }
+.jobs .jh span { font-size: 13px; color: var(--orange); font-weight: 800; }
+.jobs .job { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 14px; }
+.jobs .job small { color: var(--muted); }
+.jobs .job.done { opacity: .6; }
+.jobs .job.done span::before { content: '\2713  '; color: var(--acid); font-weight: 800; }
+.jobs .bonus { font-size: 12px; color: var(--muted); }
 .daily.weekly b { color: var(--orange); }
 .daily span { font-size: 13px; color: var(--muted); line-height: 1.4; }
 .pick.evo { border-color: #ffd23a; background: linear-gradient(90deg, rgba(255,210,58,.24), rgba(255,154,31,.06)); }
@@ -374,6 +383,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
     <button class="btn" id="playBtn" type="button">Play</button>
     <button class="daily" id="dailyBtn" type="button"><b>Daily challenge</b><span id="dailyTxt"></span></button>
     <button class="daily weekly" id="weeklyBtn" type="button"><b>Weekly challenge</b><span id="weeklyTxt"></span></button>
+    <div class="jobs" id="jobsBox" aria-live="polite"></div>
     <div class="menubtns"><button class="ibtn wbtn" id="wardrobeBtn" type="button">Wardrobe</button><button class="ibtn wbtn" id="shopBtn" type="button">Shop</button><button class="ibtn wbtn" id="bestiaryBtn" type="button">Bestiary</button><button class="ibtn wbtn" id="statsBtn" type="button">Stats</button><button class="ibtn wbtn" id="achBtn" type="button">Achievements</button><button class="ibtn wbtn" id="settingsBtn" type="button">Settings</button></div>
     <div class="best" id="bestMenu"></div>
     <details class="howto" id="howto">
@@ -512,7 +522,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '50';
+const GAME_VERSION = '51';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false, buzz: true }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -547,6 +557,57 @@ function loadBest(m) {
   try { const b = JSON.parse(localStorage.getItem(bestKey(m)) || 'null'); return b && ((m === 'daily' && b.day !== dayKey()) || (m === 'weekly' && b.week !== weekKey())) ? null : b; } catch (e) { return null; }
 }
 function saveBest(b, m) { try { localStorage.setItem(bestKey(m), JSON.stringify(b)); } catch (e) {} }
+/* ---------- daily streak and today's jobs ----------
+   The first run each day pays a streak bonus (10 coins a day in a row, up to 70), and three small jobs a day,
+   the same for everyone, pay 25 coins each and 50 more for all three. Progress adds up across the day's runs. */
+const JOB_POOL = [
+  { id: 'kills',   n: [400, 800, 1500], txt: n => `Defeat ${n.toLocaleString()} enemies` },
+  { id: 'bosses',  n: [1, 2, 3],        txt: n => `Beat ${n} boss${n > 1 ? 'es' : ''}` },
+  { id: 'friends', n: [1, 2, 4],        txt: n => `Make ${n} animal friend${n > 1 ? 's' : ''}` },
+  { id: 'strikes', n: [3, 5, 8],        txt: n => `Call in ${n} airstrikes` },
+  { id: 'chests',  n: [2, 4, 6],        txt: n => `Open ${n} treasure chests` },
+  { id: 'best',    n: [180, 300, 480],  txt: n => `Survive ${fmt(n)} in one run` },
+  { id: 'daily',   n: [1],              txt: () => 'Play the daily challenge' }
+];
+const JOB_PAY = 25, JOB_BONUS = 50;
+function ensureJobs() {
+  const day = dayKey(); if (prog.jobs && prog.jobs.day === day) return prog.jobs;
+  const pool = JOB_POOL.slice(), list = [];
+  for (let i = 0; i < 3; i++) {
+    const J = pool.splice(Math.floor(hash(day, 101 + i) * pool.length), 1)[0];
+    list.push({ id: J.id, n: J.n[Math.floor(hash(day, 201 + i) * J.n.length)], done: false });
+  }
+  prog.jobs = { day, list, c: {}, all: false }; saveProg(); return prog.jobs;
+}
+function jobAdd(id, v = 1, max = false) {
+  const J = ensureJobs(); if (!J.list.some(j => j.id === id && !j.done)) return;
+  J.c[id] = max ? Math.max(J.c[id] || 0, v) : (J.c[id] || 0) + v;
+  for (const j of J.list) if (!j.done && j.id === id && J.c[id] >= j.n) {
+    j.done = true; prog.coins += JOB_PAY; G.coinsJobs = (G.coinsJobs || 0) + JOB_PAY;
+    const txt = JOB_POOL.find(q => q.id === id).txt(j.n);
+    if (G && state !== 'menu') G.toast = { txt: 'JOB DONE!', sub: `${txt}: +${JOB_PAY} coins`, life: 3.5, max: 3.5 };
+    tone(784, 0.12, 'triangle', 0.05); later(110, () => tone(1175, 0.18, 'triangle', 0.05));
+    if (!J.all && J.list.every(q => q.done)) {
+      J.all = true; prog.coins += JOB_BONUS;
+      later(3600, () => { if (G && state !== 'menu') G.toast = { txt: "ALL TODAY'S JOBS DONE!", sub: `+${JOB_BONUS} bonus coins. New jobs tomorrow.`, life: 4, max: 4 }; });
+    }
+    saveProg();
+  }
+}
+const yesterdayKey = () => { const d = new Date(Date.now() - 864e5); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); };
+function checkStreak() { // on the first run of the day
+  const today = dayKey(), s = prog.streak || { last: 0, n: 0 }; if (s.last === today) return;
+  s.n = s.last === yesterdayKey() ? s.n + 1 : 1; s.last = today; prog.streak = s;
+  const bonus = 10 * Math.min(s.n, 7); prog.coins += bonus; saveProg();
+  if (prog.runs) G.toast = { txt: s.n > 1 ? `DAY ${s.n} STREAK!` : 'FIRST RUN TODAY', sub: `+${bonus} coins. Come back tomorrow for ${10 * Math.min(s.n + 1, 7)}.`, life: 4, max: 4 };
+}
+function buildJobs() {
+  const J = ensureJobs(), s = prog.streak, live = s && (s.last === dayKey() || s.last === yesterdayKey()) ? s.n : 0;
+  $('jobsBox').innerHTML = `<div class="jh"><b>Today's jobs</b><span>${live > 1 ? `\ud83d\udd25 ${live}-day streak` : ''}</span></div>` +
+    J.list.map(j => { const T = JOB_POOL.find(q => q.id === j.id), have = Math.min(j.n, Math.floor(J.c[j.id] || 0));
+      return `<div class="job${j.done ? ' done' : ''}"><span>${T.txt(j.n)}</span><small>${j.done ? `+${JOB_PAY}` : j.id === 'best' ? fmt(have) + ' / ' + fmt(j.n) : have.toLocaleString() + ' / ' + j.n.toLocaleString()}</small></div>`; }).join('') +
+    `<div class="bonus">${JOB_PAY} coins each, ${JOB_BONUS} more for all three. New jobs every day.</div>`;
+}
 function showBest(m) {
   const line = k => { const b = loadBest(k), n = MODE_NAME[k]; return b ? `${n} best: ${fmt(b.time)} survived, ${b.kills.toLocaleString()} enemies defeated` : `No ${n.toLowerCase()} best yet. Go set one.`; };
   const g = prog.gauntlet ? ` \u00b7 Gauntlet record: ${prog.gauntlet} lap${prog.gauntlet > 1 ? 's' : ''} cleared` : '';
@@ -1272,7 +1333,7 @@ function swampGas(x, y) {
   burst(x, y, '#9acd32', SET.low ? 4 : 10, 120, 5);
 }
 function killAnt(a, src) {
-  a.dead = true; G.kills++; sfx.squish();
+  a.dead = true; G.kills++; sfx.squish(); if (!a.proxy) jobAdd('kills');
   if (state !== 'menu' && !a.proxy) { const k = a.boss ? 'boss:' + a.kind : a.type; prog.seen[k] = (prog.seen[k] || 0) + 1; } // for the bestiary (saved with the run)
   if (a.segs) a.segs.forEach(s => { s.dead = true; }); // they pop one by one in the death animation
   burst(a.x, a.y, a.col, a.boss ? 60 : 8, a.boss ? 320 : 150, a.boss ? 6 : 3);
@@ -1284,7 +1345,7 @@ function killAnt(a, src) {
   if (src !== 'strike' && p.strikeCd <= 0) p.strike = Math.min(p.strikeNeed, p.strike + (a.boss ? p.strikeNeed : 1));
   if (a.boss) {
     // the loot drops at the end of the death animation (see updateDeath)
-    G.boss = null; G.bossKills++; startDeath(a);
+    G.boss = null; G.bossKills++; jobAdd('bosses'); startDeath(a);
     // the next boss is never sooner than 60% of the usual gap after this one dies, however long the fight took
     G.nextBoss = Math.max(G.nextBoss, G.t + G.D.bossGap * 0.6);
     G.stats.bosses.push({ name: BOSSES[a.kind].name, secs: G.t - (a.spawnT || G.t) });
@@ -1364,7 +1425,7 @@ function bite(a, p, dt) {
 }
 function callStrike() {
   const p = G.p; if (p.strikeCd > 0 || p.strike < p.strikeNeed) return;
-  p.strike = 0; p.strikeCd = p.strikeCdMax; sfx.chopper(); say('strike', 0.5); G.banner = { txt: 'AIRSTRIKE INBOUND', life: 1.6 };
+  p.strike = 0; p.strikeCd = p.strikeCdMax; sfx.chopper(); say('strike', 0.5); jobAdd('strikes'); G.banner = { txt: 'AIRSTRIKE INBOUND', life: 1.6 };
   const inView = G.ants.filter(a => !a.proxy && Math.abs(a.x - p.x) < VW / 2 && Math.abs(a.y - p.y) < VH / 2);
   inView.sort((a, b) => (b.boss ? 1e6 : b.maxHp) - (a.boss ? 1e6 : a.maxHp));
   for (let i = 0; i < p.missiles; i++) {
@@ -1613,7 +1674,7 @@ function updateFriends(dt) {
       G.friends.push({ kind: d.kind, cd: 1, hop: 1 });
       G.toast = { txt: `A ${F.name.toUpperCase()} JOINED YOU!`, sub: F.desc + '. Up to four can ride along.', life: 3, max: 3 };
       [880, 1175, 1568].forEach((f, i) => later(i * 80, () => tone(f, 0.1, 'triangle', 0.05)));
-      say('friend', 1, true); prog.friendsMet = (prog.friendsMet || 0) + 1;
+      say('friend', 1, true); prog.friendsMet = (prog.friendsMet || 0) + 1; jobAdd('friends');
     }
   }
   G.fdrops = G.fdrops.filter(d => !d.dead);
@@ -2413,6 +2474,7 @@ function update(dt) {
   p.inv = Math.max(0, p.inv - dt); p.flash = Math.max(0, p.flash - dt); p.flash2 = Math.max(0, p.flash2 - dt); p.strikeCd = Math.max(0, p.strikeCd - dt);
   p.hurtT = Math.max(0, p.hurtT - dt);
   G.sayCd -= dt; if (G.say && (G.say.life -= dt) <= 0) G.say = null;
+  if (Math.floor(G.t) !== Math.floor(G.t - dt)) jobAdd('best', Math.floor(G.t), true);
   if (G.t > 1.2 && !G.saidHi) { G.saidHi = true; if (Math.random() < 0.6) say('start', 1, true); }
   G.still = p.moving ? 0 : G.still + dt; if (G.still > 7) { G.still = 0; say('idle', 0.7); }
   if (p.hp < p.maxHp * 0.25 && !G.lowSaid) { G.lowSaid = true; say('low', 1, true); } else if (p.hp > p.maxHp * 0.6) G.lowSaid = false;
@@ -2739,7 +2801,7 @@ function update(dt) {
     if ((p.x - m.x) ** 2 + (p.y - m.y) ** 2 < (p.r + 14) ** 2) { m.dead = true; p.hp = Math.min(p.maxHp, p.hp + 30); sfx.eat(); say('melon', 0.4); G.texts.push({ x: p.x, y: p.y - 30, txt: '+30', life: 1, heal: true }); if (G.hat === 'chef' && G.hatCd <= 0) { G.hatCd = 25; p.rageT = Math.max(p.rageT, 5); hatSay('ORDER UP!'); } }
   }
   for (const c of G.chests) {
-    if (state === 'play' && (p.x - c.x) ** 2 + (p.y - c.y) ** 2 < (p.r + 20) ** 2) { c.dead = true; G.chestsOpened++; buzz(30); burst(c.x, c.y, '#ffd23a', 24, 220, 4); openLevelUp('chest'); }
+    if (state === 'play' && (p.x - c.x) ** 2 + (p.y - c.y) ** 2 < (p.r + 20) ** 2) { c.dead = true; G.chestsOpened++; jobAdd('chests'); buzz(30); burst(c.x, c.y, '#ffd23a', 24, 220, 4); openLevelUp('chest'); }
   }
 
   stepFx(dt);
@@ -3888,6 +3950,7 @@ function start(mode) {
   audio(); newGame(); state = 'play';
   mode = mode || prog.diff; if (mode === 'nightmare' && !nightmareOpen()) mode = 'normal';
   const D = G.D = rulesFor(mode); G.mode = mode; G.nextBoss = D.bossGap; gc('run-start/' + mode);
+  checkStreak(); if (mode === 'daily') jobAdd('daily');
   G.unlocked0 = SKINS.concat(HATS).filter(isUnlocked);
   const hatOn = HATS.find(x => x.id === prog.hat && isUnlocked(x)); G.hat = hatOn ? hatOn.id : 'none'; G.hatCd = (HAT_CD[G.hat] || 0) * 0.5;
   // unlocked skins carry a stat bonus
@@ -4241,7 +4304,7 @@ function buildMenu() {
   const wr = weeklyRules().mods, wb = loadBest('weekly');
   $('weeklyTxt').textContent = `${wr.map(m => m.name).join(' + ')}. Any path. ` + (wb ? `Best this week: ${fmt(wb.time)}.` : 'Not played yet.');
   $('weeklyBtn').title = wr.map(m => `${m.name}: ${m.desc.toLowerCase()}`).join('. ') + '.';
-  showBest();
+  showBest(); buildJobs();
 }
 $('modes').onclick = e => { const b = e.target.closest('.mode'); if (!b || b.disabled) return; prog.diff = b.dataset.diff; saveProg(); buildMenu(); };
 buildMenu();
