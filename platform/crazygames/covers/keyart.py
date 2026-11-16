@@ -10,8 +10,9 @@ Needs Pillow, fontTools and brotli (pip install pillow fonttools brotli).
 
 CrazyGames puts badges ("Hot", "Updated") in a label zone at the top-left of each cover, roughly 36% x 20%
 (landscape), 40% x 10% (portrait) and 35% x 30% (square). Nothing important goes there, and the title is
-the only text, as CrazyGames requires. The sprites are small (the capybara is 131x200), so they are scaled
-up 3-4x: soft at full size, sharp at the sizes the covers are actually shown.
+the only text, as CrazyGames requires. The capybara and its minigun come from hd/: a high-resolution redraw
+of the capybara (Pixa, Muse Image, from the game sprite) and the minigun sprite upscaled 4x (Pixa upscale),
+both cut out of a flat background. Everything else is a game sprite scaled up 3-4x.
 """
 import base64, io, json, math, os, random, re
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps, ImageEnhance
@@ -43,6 +44,13 @@ def sprite(name):
 def clean(im, cut=60):
     r, g, b, a = im.split(); return Image.merge('RGBA', (r, g, b, a.point(lambda v: 0 if v < cut else v)))
 def up(im, f): return clean(im.resize((round(im.width * f), round(im.height * f)), Image.LANCZOS))
+def big(name, f):
+    """a sprite at f times its game size: from the high-resolution redraw in hd/ when there is one (the capybara
+    and the minigun, made with Pixa from the game sprites), otherwise the game sprite scaled up"""
+    sp = sprite(name); w, h = round(sp.width * f), round(sp.height * f)
+    p = os.path.join(HERE, 'hd', name + '.png')
+    if not os.path.exists(p): return up(sp, f)
+    return clean(Image.open(p).convert('RGBA').resize((w, h), Image.LANCZOS))
 def pad(im, p):
     c = Image.new('RGBA', (im.width + 2 * p, im.height + 2 * p)); c.alpha_composite(im, (p, p)); return c
 def outline(im, px, col=(26, 18, 6, 255)):
@@ -94,10 +102,10 @@ def cover(shape, W, H, s, capx, drop, qs, qhead, title, ants, seed=4):
         shadow(bg, a, x, y, 10, (0, 8), 120); paste(bg, a, x, y)
 
     # the capybara, its minigun and where the barrel ends up
-    c = outline(up(sprite('capy'), s), max(6, round(s * 2)))
+    c = outline(big('capy', s), max(6, round(s * 2)))
     cx, cy = capx - c.width / 2, H - c.height + drop
     grip = (cx + 0.82 * c.width, cy + 0.53 * c.height)            # its front paw
-    gun0 = outline(up(sprite('gun_gunner_1'), s * 0.84), max(4, round(s * 1.4)))
+    gun0 = outline(big('gun_gunner_1', s * 0.84), max(4, round(s * 1.4)))
     a0 = gun0.split()[3]; xs = [x for x in range(gun0.width) if any(a0.getpixel((x, y)) for y in range(gun0.height))]
     tip_x = xs[-1]; tip_ys = [y for y in range(gun0.height) if a0.getpixel((tip_x - 3, y))]
     tip0 = (tip_x, sum(tip_ys) / len(tip_ys)); grip0 = (0.55 * gun0.width, 0.46 * gun0.height)
@@ -124,7 +132,7 @@ def cover(shape, W, H, s, capx, drop, qs, qhead, title, ants, seed=4):
     shadow(bg, c, cx, cy, 30, (10, 30), 170); paste(bg, c, cx, cy)
     shadow(bg, gun, gx, gy, 16, (6, 18), 160); paste(bg, gun, gx, gy)
     # the front paw goes back over the gun, so the capybara is holding it
-    pm = Image.new('L', c.size, 0); px, py = 0.82 * c.width, 0.53 * c.height; r = 15 * s
+    pm = Image.new('L', c.size, 0); px, py = 0.85 * c.width, 0.525 * c.height; r = 10.5 * s
     ImageDraw.Draw(pm).ellipse((px - r, py - r * 0.85, px + r * 1.12, py + r * 0.8), fill=255)
     pa = c.copy(); pa.putalpha(Image.composite(c.split()[3], Image.new('L', c.size, 0), pm.filter(ImageFilter.GaussianBlur(s * 1.4))))
     paste(bg, pa, cx, cy)

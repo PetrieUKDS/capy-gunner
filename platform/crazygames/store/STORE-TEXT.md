@@ -75,7 +75,7 @@ Landscape and portrait both work. The layout fits the screen it's given.
 | `cover-portrait-800x1200.png` | 800×1200 (2:3) |
 | `cover-square-800x800.png` | 800×800 (1:1) |
 
-These are key art: a big capybara firing its minigun at the Ant Queen, put together from the game's own sprites by `../covers/keyart.py` (run it from the repo root to rebuild them). The first covers were gameplay frames, but at thumbnail size the capybara was a speck in a field of grass, and the click-through rate during Basic Launch was 0.55%, below the bottom 20% of shooting games. The capybara, the title and the queen keep clear of the top-left label zone, where CrazyGames puts its badges, and the script warns if anything strays into it. The only text on them is the title, as CrazyGames requires. The game's art was made with Pixa. CrazyGames publishes no AI-art policy, but say so if they ask.
+These are key art: a big capybara firing its minigun at the Ant Queen, put together from the game's own sprites, with a high-resolution redraw of the capybara and its minigun (made with Pixa from the game sprites, in `../covers/hd/`), by `../covers/keyart.py` (run it from the repo root to rebuild them). The first covers were gameplay frames, but at thumbnail size the capybara was a speck in a field of grass, and the click-through rate during Basic Launch was 0.55%, below the bottom 20% of shooting games. The capybara, the title and the queen keep clear of the top-left label zone, where CrazyGames puts its badges, and the script warns if anything strays into it. The only text on them is the title, as CrazyGames requires. The game's art was made with Pixa. CrazyGames publishes no AI-art policy, but say so if they ask.
 
 
 ## Gameplay videos
