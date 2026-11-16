@@ -473,7 +473,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '41';
+const GAME_VERSION = '42';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -483,7 +483,9 @@ function resize() {
   DPR = SET.low ? 1 : Math.min(1.5, window.devicePixelRatio || 1);
   W = innerWidth; H = innerHeight;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-  ZOOM = Math.max(0.62, Math.min(1, Math.min(W, H) / 720));
+  // phones get a closer camera than they used to (0.62): the capybara and ants were too small to read on a
+  // phone screen. 0.8 still leaves about 470 world units across the short side to see ants coming.
+  ZOOM = Math.max(0.8, Math.min(1, Math.min(W, H) / 720));
   VW = W / ZOOM; VH = H / ZOOM;
   vignette = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
   vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(0,0,0,0.45)');
