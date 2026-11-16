@@ -20,6 +20,8 @@ window.VIDEO = (() => {
     const G = T.G; G.nextBoss = 1e9;
     REC.ffwd(50);
     G.p.level = 22; for (let i = 0; i < 34; i++) { T.openLevelUp('xp'); REC.autopick(); }
+    // three animal friends riding along (v48), so the clip shows them off
+    G.friends = ['duck', 'bird', 'monkey'].map(kind => ({ kind, cd: 1, hop: 0 }));
     G.p.hp = G.p.maxHp; REC.ffwd(o.swarm ?? 110); G.toast = null; G.banner = null;
   }
 
