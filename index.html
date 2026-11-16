@@ -502,7 +502,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '45';
+const GAME_VERSION = '46';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false, buzz: true }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -590,15 +590,16 @@ function noise(dur, vol = 0.15, lp = 900, ftype = 'lowpass', q = 0.7) {
 const later = (ms, fn) => setTimeout(fn, ms);
 const sfx = {
   // a gunshot: a filtered noise crack, a low thump and a tiny mechanical click
-  shoot() { const n = performance.now(); if (n - lastShot < 70) return; lastShot = n;
-    noise(0.045, 0.09, rand(2800, 3600), 'bandpass', 1.1); tone(rand(150, 180), 0.06, 'sine', 0.07, -90); tone(rand(950, 1150), 0.018, 'square', 0.01, -500); },
+  // kept fairly quiet: the fast guns fire many times a second and would otherwise drown the music
+  shoot() { const n = performance.now(); if (n - lastShot < 85) return; lastShot = n;
+    noise(0.04, 0.045, rand(2800, 3600), 'bandpass', 1.1); tone(rand(150, 180), 0.05, 'sine', 0.04, -90); tone(rand(950, 1150), 0.015, 'square', 0.006, -500); },
   pump() { noise(0.18, 0.2, 1400); noise(0.05, 0.1, 4200, 'highpass'); tone(90, 0.16, 'sine', 0.13, -50); },
   snipe() { noise(0.035, 0.16, 5200, 'highpass'); tone(950, 0.14, 'sawtooth', 0.045, -820); noise(0.16, 0.1, 2400); tone(70, 0.28, 'sine', 0.13, -35); },
   thump() { tone(170, 0.12, 'triangle', 0.08, -100); noise(0.08, 0.08, 700); },
   flame() { const n = performance.now(); if (n - lastFlame < 140) return; lastFlame = n; noise(0.16, 0.05, 1500); },
   // a wet little splat, rate-limited so a whole swarm going down doesn't turn into a buzz
-  squish() { const n = performance.now(); if (n - lastSquish < 40) return; lastSquish = n;
-    noise(0.07, 0.08, rand(700, 1000), 'bandpass', 2); tone(rand(260, 330), 0.07, 'sine', 0.05, -200); },
+  squish() { const n = performance.now(); if (n - lastSquish < 55) return; lastSquish = n;
+    noise(0.07, 0.06, rand(700, 1000), 'bandpass', 2); tone(rand(260, 330), 0.07, 'sine', 0.035, -200); },
   // a bright two-note sparkle, climbing a little with each seed picked up in quick succession
   gem() { const n = performance.now(); if (n - lastGem < 35) return; gemRun = n - lastGem < 400 ? Math.min(gemRun + 1, 12) : 0; lastGem = n;
     const f = 1046 * Math.pow(2, gemRun / 24); tone(f, 0.06, 'sine', 0.035, 300); tone(f * 1.5, 0.05, 'triangle', 0.014); },
@@ -651,6 +652,7 @@ const SONGS = {
   gauntletBoss: { bpm: 162, chords: [[52, 55, 59], [53, 57, 60], [48, 52, 55], [47, 51, 54]], lead: 'square', bass: 'sawtooth' }  // Em F C B
 };
 const songKey = boss => { const b = biomeNow(), a = b.gauntlet ? 'gauntlet' : b.art === 'dunes' ? 'dunes' : b.art === 'swamp' ? 'swamp' : 'meadow'; return boss ? a + 'Boss' : a; };
+const MUSIC_GAIN = 0.42; // the music's level before the Music setting (0.32 until v45, when the louder gunfire covered it)
 function mNote(f, t, dur, type, vol, wet) {
   const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(music.out); if (wet) g.connect(music.wet); o.start(t); o.stop(t + dur + 0.02);
@@ -690,8 +692,8 @@ function musicTick() {
   if (!music.out) {
     // the mix: everything through a gentle low-pass (takes the fizz off the square and saw waves), with a
     // short generated reverb that the lead and pads are sent into
-    music.out = AC.createGain(); music.out.gain.value = 0.32 * SET.music;
-    const soft = AC.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 5200; soft.Q.value = 0.5;
+    music.out = AC.createGain(); music.out.gain.value = MUSIC_GAIN * SET.music;
+    const soft = AC.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 7000; soft.Q.value = 0.5;
     music.out.connect(soft).connect(AC.destination);
     const verb = AC.createConvolver(), len = Math.floor(AC.sampleRate * 1.6), ir = AC.createBuffer(2, len, AC.sampleRate);
     for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
@@ -3877,7 +3879,7 @@ function buildSettings(keep) {
 $('setList').onclick = e => {
   const b = e.target.closest('button'); if (!b) return; const k = b.dataset.k, d = b.dataset.d;
   if (d) SET[k] = Math.round(clamp(SET[k] + d * 0.2, 0, 1) * 10) / 10; else SET[k] = !SET[k];
-  saveSet(); if (music.out) music.out.gain.value = 0.32 * SET.music; if (k === 'low') resize(); document.body.classList.toggle('bighud', SET.big);
+  saveSet(); if (music.out) music.out.gain.value = MUSIC_GAIN * SET.music; if (k === 'low') resize(); document.body.classList.toggle('bighud', SET.big);
   buildSettings([k, d]);
 };
 document.body.classList.toggle('bighud', SET.big);
