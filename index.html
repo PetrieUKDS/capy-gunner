@@ -502,7 +502,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '46';
+const GAME_VERSION = '47';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false, buzz: true }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -1088,7 +1088,7 @@ function newGame() {
          xp: 0, level: 1, next: 5, inv: 0, aim: 0, aim2: 0, walk: 0, moving: false, flash: 0, flash2: 0, firing: false, spinT: 0, alt: false, target2: null,
          weapon: 'pistol', w: { ...PATHS.pistol.base }, wlv: {}, tier: 0, cd: 0, burstLeft: 0, burstT: 0, upg: {},
          strike: 0, strikeNeed: 45, missiles: 12, strikeCd: 0, strikeCdMax: 25, hurtT: 0, face: 1, dmgMul: 1, rateMul: 1, xpMul: 1, rageT: 0, evo: null, slowed: false, side: null, sideLv: 0, sw: null, s: null, swlv: {}, swEvo: null, armor: 1, giant: 0, leech: 0, gas: 0, safeT: 0, kick: 0, ouch: 0, hop: 0 },
-    ants: [], splats: [], bullets: [], spit: [], nades: [], booms: [], gems: [], melons: [], parts: [], texts: [], strikes: [], orbA: 0,
+    ants: [], splats: [], say: null, sayCd: 2, still: 0, lowSaid: false, bullets: [], spit: [], nades: [], booms: [], gems: [], melons: [], parts: [], texts: [], strikes: [], orbA: 0,
     chests: [], pickups: [], tunnels: [], puddles: [], clouds: [], rerolls: 0, banishes: 0, banished: 0, banned: [], banishing: false
   };
 }
@@ -1286,7 +1286,7 @@ function killAnt(a, src) {
     if (Math.random() < (G.hat === 'chef' ? 0.018 : 0.012)) G.melons.push({ x: a.x, y: a.y });
     if (a.elite) {
       G.stats.elites++;
-      G.chests.push({ x: a.x, y: a.y }); burst(a.x, a.y, ELITES[a.elite].col, 30, 260, 5); burst(a.x, a.y, '#ffd23a', 16, 200, 4);
+      G.chests.push({ x: a.x, y: a.y }); say('elite', 0.5); burst(a.x, a.y, ELITES[a.elite].col, 30, 260, 5); burst(a.x, a.y, '#ffd23a', 16, 200, 4);
       hitStop(0.08); G.flash = Math.max(G.flash, 0.35); G.flashCol = '255,255,255'; buzz(40);
       if (a.elite === 'split') for (const s of [-1, 1]) spawnAnt(a.type, a.x + s * a.r, a.y - s * a.r * 0.5);
     }
@@ -1312,7 +1312,7 @@ function damagePlayer(d, from) {
   d *= G.D.dmg * p.armor;
   if (G.hat === 'halo' && !G.hatUsed && p.hp - d <= 0) { hatRevive(); return; }
   p.hp -= d; p.hurtT = 1.5; G.shake = Math.max(G.shake, 6); G.bossClean = false;
-  if (p.inv <= 0) { p.inv = 0.2; p.ouch = 1; sfx.hurt(); burst(p.x, p.y, '#e8503f', 6, 140, 3); buzz(35); }
+  if (p.inv <= 0) { p.inv = 0.2; p.ouch = 1; say('bit', 0.3); sfx.hurt(); burst(p.x, p.y, '#e8503f', 6, 140, 3); buzz(35); }
   if (p.hp <= 0) { p.hp = 0; gameOver(); }
 }
 const TYPE_NAME = { worker: 'a worker ant', runner: 'a runner ant', soldier: 'a soldier ant', spitter: 'a spitter ant', cyber: 'a cyber ant', driller: 'a driller ant', jet: 'a jet ant', laser: 'a laser ant', mech: 'a mech ant' };
@@ -1347,7 +1347,7 @@ function bite(a, p, dt) {
 }
 function callStrike() {
   const p = G.p; if (p.strikeCd > 0 || p.strike < p.strikeNeed) return;
-  p.strike = 0; p.strikeCd = p.strikeCdMax; sfx.chopper(); G.banner = { txt: 'AIRSTRIKE INBOUND', life: 1.6 };
+  p.strike = 0; p.strikeCd = p.strikeCdMax; sfx.chopper(); say('strike', 0.5); G.banner = { txt: 'AIRSTRIKE INBOUND', life: 1.6 };
   const inView = G.ants.filter(a => !a.proxy && Math.abs(a.x - p.x) < VW / 2 && Math.abs(a.y - p.y) < VH / 2);
   inView.sort((a, b) => (b.boss ? 1e6 : b.maxHp) - (a.boss ? 1e6 : a.maxHp));
   for (let i = 0; i < p.missiles; i++) {
@@ -1436,7 +1436,7 @@ function flameTick(want, gx, gy) {
 }
 
 /* ---------- level up ---------- */
-function closeLevelUp() { $('levelup').hidden = true; state = 'play'; last = performance.now(); G.p.hop = 1; if (G.hat === 'party') hatParty(); }
+function closeLevelUp() { $('levelup').hidden = true; state = 'play'; last = performance.now(); G.p.hop = 1; say('level', 0.3); if (G.hat === 'party') hatParty(); }
 function openLevelUp(src) {
   state = 'levelup'; sfx.level();
   const p = G.p, box = $('picks'); box.innerHTML = '';
@@ -1551,6 +1551,37 @@ function nearestFoes(n, rad) {
   return out.sort((x, y) => ((x.x - p.x) ** 2 + (x.y - p.y) ** 2) - ((y.x - p.x) ** 2 + (y.y - p.y) ** 2)).slice(0, n);
 }
 const hatSay = txt => G.texts.push({ x: G.p.x, y: G.p.y - 54, txt, life: 1.1, crit: true });
+// the capybara's deadpan remarks: short, lower case, one at a time, and not too often (a boss always gets one)
+const LINES = {
+  start: ['ok.', "let's go.", 'here they come.', 'ants. great.'],
+  bit: ['rude.', 'ow.', 'hey.', 'bruh.', 'not cool.', 'excuse me.'],
+  boss: ['ok.', 'oh no.', 'big ant.', 'here we go.', 'nope.', 'sure.'],
+  bossDown: ['too easy.', 'next.', 'bye.', 'sorted.'],
+  level: ['nice.', 'ooh.', 'yes.', 'power.', 'stronger.'],
+  elite: ['shiny.', 'loot.', 'mine now.'],
+  strike: ['chopper time.', 'air support.', 'incoming.'],
+  melon: ['mm. melon.', 'snack.', 'crunchy.'],
+  low: ['need a melon.', 'this is fine.', 'hmm.'],
+  idle: ['...', "chillin'.", 'zen.', 'any minute now.']
+};
+function say(kind, chance = 1, force = false) {
+  if (!G || state === 'menu' || (!force && (G.sayCd > 0 || Math.random() > chance))) return;
+  const l = LINES[kind]; G.say = { txt: l[Math.floor(Math.random() * l.length)], life: 2.2, max: 2.2 }; G.sayCd = 7;
+}
+function drawSay() {
+  const t = G.say, p = G.p; if (!t) return;
+  const a = Math.min(1, (t.max - t.life) * 8, t.life * 3);
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.font = '16px "Lilita One", Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(t.txt).width + 18, h = 26, x = p.x + 28, y = p.y - 86 - (1 - a) * 6;
+  ctx.fillStyle = '#fffaf0'; ctx.strokeStyle = '#2a1a10'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.roundRect(x - w / 2, y - h / 2, w, h, 10);
+  ctx.moveTo(x - w / 2 + 12, y + h / 2); ctx.lineTo(x - w / 2 + 4, y + h / 2 + 9); ctx.lineTo(x - w / 2 + 22, y + h / 2);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fffaf0'; ctx.fillRect(x - w / 2 + 11, y + h / 2 - 2.5, 12, 4); // hide the outline where the tail joins
+  ctx.fillStyle = '#2a1a10'; ctx.fillText(t.txt, x, y + 1);
+  ctx.restore();
+}
 function hatCast(hat) {
   const p = G.p;
   if (hat === 'orange') { if (G.mines.length < 5) { G.mines.push({ x: p.x, y: p.y, life: 14 }); tone(420, 0.1, 'sine', 0.04, 200); } return true; }
@@ -2111,7 +2142,7 @@ function updateIntro(dt) {
   if (I.t > I.dur - INTRO.panOut - 0.3) $('bossCard').classList.add('out');
   stepFx(dt);
   if (I.t >= I.dur) {
-    $('bossCard').hidden = true; b.intro = false; G.intro = null; state = 'play';
+    $('bossCard').hidden = true; b.intro = false; G.intro = null; state = 'play'; say('boss', 1, true);
     $('hud').hidden = false; $('strikeBtn').hidden = false; G.cam.x = p.x; G.cam.y = p.y; last = performance.now();
   }
 }
@@ -2120,6 +2151,7 @@ function updateIntro(dt) {
    apart segment by segment) before the loot bursts out and play carries on. */
 const DEATH = { dur: 3.4, pan: 0.5, skipAfter: 0.8, pop: 2.3 };
 function startDeath(b) {
+  say('bossDown', 1, true);
   b.intro = false; b.hitT = 0;
   b.under = false; b.tLen = 0;
   const d = G.death = { b, t: 0, dur: DEATH.dur, popped: false, segs: b.segs ? b.segs.slice() : null, alt0: b.alt || 0, nextFx: 0 };
@@ -2263,6 +2295,10 @@ function update(dt) {
   p.safeT = Math.max(0, p.safeT - dt);
   p.inv = Math.max(0, p.inv - dt); p.flash = Math.max(0, p.flash - dt); p.flash2 = Math.max(0, p.flash2 - dt); p.strikeCd = Math.max(0, p.strikeCd - dt);
   p.hurtT = Math.max(0, p.hurtT - dt);
+  G.sayCd -= dt; if (G.say && (G.say.life -= dt) <= 0) G.say = null;
+  if (G.t > 1.2 && !G.saidHi) { G.saidHi = true; if (Math.random() < 0.6) say('start', 1, true); }
+  G.still = p.moving ? 0 : G.still + dt; if (G.still > 7) { G.still = 0; say('idle', 0.7); }
+  if (p.hp < p.maxHp * 0.25 && !G.lowSaid) { G.lowSaid = true; say('low', 1, true); } else if (p.hp > p.maxHp * 0.6) G.lowSaid = false;
   p.kick = Math.max(0, p.kick - dt * 10); p.ouch = Math.max(0, p.ouch - dt * 5); p.hop = Math.max(0, p.hop - dt * 2.8);
   // healing scales with max health, and slows to half speed (rather than stopping) for a moment after a bite
   if (p.regen) p.hp = Math.min(p.maxHp, p.hp + p.regen * p.maxHp * (p.hurtT > 0 ? 0.5 : 1) * dt);
@@ -2582,7 +2618,7 @@ function update(dt) {
   for (const m of G.melons) {
     const dx = p.x - m.x, dy = p.y - m.y, dd = dx * dx + dy * dy;
     if (dd < mag2 || m.pull) { m.pull = true; const d = Math.sqrt(dd) || 1, s = m.fast ? 900 : 420; m.x += dx / d * s * dt; m.y += dy / d * s * dt; }
-    if ((p.x - m.x) ** 2 + (p.y - m.y) ** 2 < (p.r + 14) ** 2) { m.dead = true; p.hp = Math.min(p.maxHp, p.hp + 30); sfx.eat(); G.texts.push({ x: p.x, y: p.y - 30, txt: '+30', life: 1, heal: true }); if (G.hat === 'chef' && G.hatCd <= 0) { G.hatCd = 25; p.rageT = Math.max(p.rageT, 5); hatSay('ORDER UP!'); } }
+    if ((p.x - m.x) ** 2 + (p.y - m.y) ** 2 < (p.r + 14) ** 2) { m.dead = true; p.hp = Math.min(p.maxHp, p.hp + 30); sfx.eat(); say('melon', 0.4); G.texts.push({ x: p.x, y: p.y - 30, txt: '+30', life: 1, heal: true }); if (G.hat === 'chef' && G.hatCd <= 0) { G.hatCd = 25; p.rageT = Math.max(p.rageT, 5); hatSay('ORDER UP!'); } }
   }
   for (const c of G.chests) {
     if (state === 'play' && (p.x - c.x) ** 2 + (p.y - c.y) ** 2 < (p.r + 20) ** 2) { c.dead = true; G.chestsOpened++; buzz(30); burst(c.x, c.y, '#ffd23a', 24, 220, 4); openLevelUp('chest'); }
@@ -3523,6 +3559,7 @@ function draw() {
   ctx.fill(); ctx.globalCompositeOperation = 'source-over';
   if (p.w.dragon) { ctx.strokeStyle = `rgba(255,130,40,${0.3 + 0.1 * Math.sin(G.t * 8)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, 100, 0, 6.283); ctx.stroke(); }
   drawCapy();
+  drawSay();
   // sidekicks
   for (const r of G.rangs) {
     ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.spin); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
