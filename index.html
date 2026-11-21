@@ -530,7 +530,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '52';
+const GAME_VERSION = '53';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false, buzz: true }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -2503,6 +2503,7 @@ function update(dt) {
   p.hurtT = Math.max(0, p.hurtT - dt);
   G.sayCd -= dt; if (G.say && (G.say.life -= dt) <= 0) G.say = null;
   if (Math.floor(G.t) !== Math.floor(G.t - dt)) jobAdd('best', Math.floor(G.t), true);
+  if (G.fm < FUNNEL_T.length && G.t >= FUNNEL_T[G.fm]) funnel(`t${FUNNEL_T[G.fm++]}${runTag()}`);
   if (G.t > 1.2 && !G.saidHi) { G.saidHi = true; if (Math.random() < 0.6) say('start', 1, true); }
   G.still = p.moving ? 0 : G.still + dt; if (G.still > 7) { G.still = 0; say('idle', 0.7); }
   if (p.hp < p.maxHp * 0.25 && !G.lowSaid) { G.lowSaid = true; say('low', 1, true); } else if (p.hp > p.maxHp * 0.6) G.lowSaid = false;
@@ -3979,6 +3980,7 @@ function start(mode) {
   mode = mode || prog.diff; if (mode === 'nightmare' && !nightmareOpen()) mode = 'normal';
   const D = G.D = rulesFor(mode); G.mode = mode; G.nextBoss = D.bossGap; gc('run-start/' + mode);
   checkStreak(); if (mode === 'daily') jobAdd('daily');
+  G.first = !prog.runs; G.fm = 0; G.leftSent = false; funnel('start' + runTag());
   G.unlocked0 = SKINS.concat(HATS).filter(isUnlocked);
   const hatOn = HATS.find(x => x.id === prog.hat && isUnlocked(x)); G.hat = hatOn ? hatOn.id : 'none'; G.hatCd = (HAT_CD[G.hat] || 0) * 0.5;
   // unlocked skins carry a stat bonus
@@ -4018,6 +4020,7 @@ function gameOver() {
   // easy runs don't count towards survival unlocks
   const before = G.unlocked0 || [];
   G.coins = Math.floor(G.kills / 25 + G.t / 10 + G.stats.elites * 5 + G.bossKills * 25);
+  funnel(`over-${tBucket(G.t)}${runTag()}`);
   const mins = G.t / 60; gc(`run-end/${gcArea()}/${mins < 2 ? '0-2' : mins < 5 ? '2-5' : mins < 10 ? '5-10' : mins < 20 ? '10-20' : '20-plus'}-min`); gc('killed-by/' + gcSlug(G.stats.killer));
   prog.kills += G.kills; prog.bosses += G.bossKills; if (m !== 'easy') prog.best = Math.max(prog.best, G.t); prog.runs++; prog.coins += G.coins;
   const p = G.p; prog.time += G.t; prog.coinsEarned += G.coins; prog.modeRuns[m] = (prog.modeRuns[m] || 0) + 1; prog.furthest = Math.max(prog.furthest, G.lap);
@@ -4153,9 +4156,26 @@ function runSummary() {
 const ON_SITE = /(^|\.)petrieuk\.co\.uk$/.test(location.hostname);
 // anonymous event counts: on petrieuk.co.uk the site adds GoatCounter to this page; anywhere else this does nothing.
 // Nothing identifies the player: just what happened (a run started, an area reached, what ended a run).
-function gc(what) { try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: 'capybara/' + what, title: what, event: true }); } catch (e) {} }
+// GoatCounter's script loads after the game starts, so anything sent before it's ready waits a few seconds for it
+const gcQueue = [];
+function gc(what) {
+  try {
+    const g = window.goatcounter;
+    if (g && g.count) { g.count({ path: 'capybara/' + what, title: what, event: true }); return; }
+    if (!ON_SITE || gcQueue.length >= 20) return;
+    gcQueue.push(what);
+    if (gcQueue.length === 1) { let n = 0; const t = setInterval(() => { const ok = window.goatcounter && window.goatcounter.count; if (ok || ++n > 40) { clearInterval(t); const q = gcQueue.splice(0); if (ok) q.forEach(gc); } }, 250); }
+  } catch (e) {}
+}
 const gcSlug = t => String(t).toLowerCase().replace(/^an? /, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const gcArea = () => { const b = biomeNow(); return b.gauntlet ? 'gauntlet' : b.art || 'meadow'; };
+/* The first-minute funnel: where new and returning players get to, and where they stop, tagged with the
+   version and phone or computer so releases can be compared, e.g. capybara/f/53/phone/t30-first.
+   Still anonymous, and still only on petrieuk.co.uk (gc does nothing anywhere else). */
+const FUNNEL_T = [10, 30, 60, 120, 300];
+const funnel = what => gc(`f/${GAME_VERSION}/${TOUCH ? 'phone' : 'desk'}/${what}`);
+const tBucket = t => t < 10 ? '0-10s' : t < 30 ? '10-30s' : t < 60 ? '30-60s' : t < 120 ? '1-2m' : '2m-plus';
+const runTag = () => G && G.first ? '-first' : '';
 function bugUrl() {
   const lines = ['**What happened?**', '', '', '**What did you expect to happen?**', '', '', '---',
     `Version: ${GAME_VERSION}`, `Device: ${navigator.userAgent}`, `Screen: ${innerWidth}x${innerHeight}${TOUCH ? ', touch' : ''}${pad.gp ? ', controller' : ''}`];
@@ -4345,6 +4365,7 @@ $('reviveBtn').onclick = takeRevive; $('reviveNo').onclick = skipRevive;
 // The menu (modes, challenges, wardrobe and so on) appears once that first run ends.
 function firstGo() { if ($('firstPlay').hidden) return; audio(); start('normal'); }
 $('firstPlay').addEventListener('click', firstGo);
+funnel(prog.runs ? 'load-menu' : 'load-first');
 if (!prog.runs) {
   $('menu').hidden = true; $('firstPlay').hidden = false;
   $('firstHint').textContent = TOUCH ? 'Drag anywhere to move. Your gun fires by itself.' : 'Move with WASD or the arrow keys. Your gun fires by itself.';
@@ -4352,7 +4373,7 @@ if (!prog.runs) {
 }
 $('wardrobeBtn').onclick = openWardrobe; $('overWardrobe').onclick = openWardrobe; $('wDone').onclick = closeWardrobe;
 $('resumeBtn').onclick = () => pause(false);
-$('quitBtn').onclick = () => { saveProg(); toMenu(); };
+$('quitBtn').onclick = () => { if (G) funnel(`quit-${tBucket(G.t)}${runTag()}`); saveProg(); toMenu(); };
 $('pauseBtn').onclick = () => pause(true);
 $('muteBtn').onclick = toggleMute; $('camBtn').onclick = toggleCam;
 // fire on touch-down, not click: phones don't send a click for a second finger while the first is still steering
@@ -4361,7 +4382,10 @@ $('strikeBtn').addEventListener('pointerdown', e => { e.preventDefault(); if (st
 // listen for the raw touch too (calling it twice is harmless: the first call spends the charge)
 $('strikeBtn').addEventListener('touchstart', e => { e.preventDefault(); if (state === 'play') callStrike(); }, { passive: false });
 $('strikeBtn').onclick = e => { if (e.detail === 0 && state === 'play') callStrike(); }; // keyboard Enter/Space on the focused button
-document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(true); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && G && !G.leftSent && G.fm !== undefined && ['play', 'paused', 'levelup', 'intro', 'spring', 'revive'].includes(state)) { G.leftSent = true; funnel(`left-${tBucket(G.t)}${runTag()}`); }
+  if (document.hidden && state === 'play') pause(true);
+});
 
 Object.keys(TYPES).forEach(antSprites); // bake up front so the first swarm doesn't hitch
 // once the painted bodies decode, re-bake with them
