@@ -67,6 +67,14 @@ Landscape and portrait both work. The layout fits the screen it's given.
 - **PEGI:** cartoon violence against fantasy creatures (ants, bugs, robots). No blood, people or real-world weapons in close-up. This should sit within PEGI 7–12. Don't market it at children, because CrazyGames rejects games aimed at kids.
 - **Languages:** English only.
 
+## Tools used (submission form)
+
+Paste this into the "tools you used" field:
+
+> Built from scratch in plain HTML5 canvas and JavaScript, with no game engine. Code written with Claude (Anthropic) as an AI coding assistant. Art made with Pixa (Pixelcut) AI image generation, using the Muse Image, Qwen Image and Recraft models, then edited, cut out and assembled by hand; the minigun on the covers was upscaled with Pixa. Sound effects and music are synthesised in code with the Web Audio API (no audio files). Fonts: Lilita One, Rubik and Caprasimo (SIL Open Font License). CrazyGames SDK v3. Covers and preview videos put together with Python (Pillow) and ffmpeg.
+
+If the field is short, use: *Plain HTML5/JavaScript (no engine). Code: Claude (AI assistant). Art: Pixa AI (Muse Image, Qwen Image, Recraft). Audio: synthesised with Web Audio. Fonts: SIL OFL. CrazyGames SDK v3.*
+
 ## Covers
 
 | File | Size |
