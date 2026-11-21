@@ -530,7 +530,7 @@ a.ibtn { text-decoration: none; display: inline-flex; align-items: center; justi
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let ctx = cv.getContext('2d'); // swapped briefly to an offscreen context while baking sprites
-const GAME_VERSION = '53';
+const GAME_VERSION = '54';
 // player settings: volumes, effects toggles and a low-graphics mode for older phones
 const SET = Object.assign({ music: 0.8, sfx: 1, shake: true, flash: true, numbers: true, low: false, hivis: false, big: false, buzz: true }, (() => { try { return JSON.parse(localStorage.getItem('capy-settings') || '{}'); } catch (e) { return {}; } })());
 const saveSet = () => { try { localStorage.setItem('capy-settings', JSON.stringify(SET)); } catch (e) {} };
@@ -4423,8 +4423,19 @@ const fpsMeter = /[?&]fps\b/.test(location.search) && (() => {
 })();
 
 let last = performance.now(), hudTick = 0;
+/* Slow-device safety net: if a run stays under about 38 frames a second for 8 seconds of play (after the
+   first 10 seconds, once the art has decoded), switch Low graphics on and say so. Once per device: if the
+   player turns it back off in Settings, it stays off. */
+let slowT = 0, slowN = 0;
+function slowCheck(gap) {
+  if (state !== 'play' || SET.low || SET.autoLowDone || !G || G.t < 10 || document.hidden || gap <= 0 || gap > 250) { slowT = slowN = 0; return; }
+  slowT += gap; slowN++; if (slowT < 8000) return;
+  const fps = slowN * 1000 / slowT; slowT = slowN = 0; if (fps >= 38) return;
+  SET.low = true; SET.autoLowDone = true; saveSet(); resize(); funnel('auto-low');
+  G.toast = { txt: 'SMOOTHER MODE ON', sub: 'Low graphics is now on to keep things smooth on this device. You can change it in Settings.', life: 4.5, max: 4.5 };
+}
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const gap = now - last, dt = Math.min(0.05, gap / 1000); last = now; slowCheck(gap);
   pollPad(dt);
   if (state === 'play') { G.hsCd -= dt; if (G.hitStop > 0) G.hitStop -= dt; else update(dt); if (G && (++hudTick & 3) === 0) hud(); }
   else if (state === 'intro') updateIntro(dt);
